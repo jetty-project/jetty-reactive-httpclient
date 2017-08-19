@@ -43,7 +43,7 @@ import org.reactivestreams.Subscription;
  * for a {@link ReactiveResponse} passing a function that handles the response
  * content:</p>
  * <pre>
- * Publisher&lt;T&gt; response = request.response((response, content) -> { ... });
+ * Publisher&lt;T&gt; response = request.response((response, content) -&gt; { ... });
  * </pre>
  */
 public class ReactiveRequest {

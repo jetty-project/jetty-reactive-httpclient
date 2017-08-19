@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
  * Any further data demand to this Publisher is forwarded to the application Publisher.
  * In turn, the application Publisher produces data that is forwarded to the subscriber
  * of this Publisher.
- * @param <T>
  */
 public class ResponseListenerPublisher<T> extends AbstractSingleProcessor<T, T> implements Response.Listener {
     private final Logger logger = LoggerFactory.getLogger(getClass());
