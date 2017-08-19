@@ -22,6 +22,16 @@
     </license>
   </licenses>
 
+  <developers>
+    <developer>
+      <id>sbordet</id>
+      <name>Simone Bordet</name>
+      <email>sbordet@webtide.com</email>
+      <organization>Webtide</organization>
+      <organizationUrl>https://webtide.com</organizationUrl>
+    </developer>
+  </developers>
+
   <distributionManagement>
     <repository>
       <id>oss.sonatype.org</id>
@@ -104,6 +114,13 @@
         <plugin>
           <artifactId>maven-release-plugin</artifactId>
           <version>2.5.3</version>
+          <configuration>
+            <goals>deploy</goals>
+            <preparationGoals>clean install</preparationGoals>
+            <mavenExecutorId>forked-path</mavenExecutorId>
+            <useReleaseProfile>true</useReleaseProfile>
+            <releaseProfiles>release</releaseProfiles>
+          </configuration>
         </plugin>
         <plugin>
           <artifactId>maven-resources-plugin</artifactId>
