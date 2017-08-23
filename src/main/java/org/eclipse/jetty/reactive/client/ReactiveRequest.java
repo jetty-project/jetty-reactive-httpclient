@@ -16,14 +16,17 @@
 package org.eclipse.jetty.reactive.client;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.function.BiFunction;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.reactive.client.internal.PublisherContent;
 import org.eclipse.jetty.reactive.client.internal.PublisherContentProvider;
 import org.eclipse.jetty.reactive.client.internal.RequestEventPublisher;
 import org.eclipse.jetty.reactive.client.internal.ResponseEventPublisher;
 import org.eclipse.jetty.reactive.client.internal.ResponseListenerPublisher;
+import org.eclipse.jetty.reactive.client.internal.StringContent;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 
@@ -276,5 +279,17 @@ public class ReactiveRequest {
          * @return the content type in the form {@code media_type[;charset=<charset>]}
          */
         public String getContentType();
+
+        public static Content fromString(String string, String mediaType, Charset charset) {
+            return new StringContent(string, mediaType, charset);
+        }
+
+        public static Content fromPublisher(Publisher<ContentChunk> publisher, String contentType) {
+            return new PublisherContent(publisher, contentType);
+        }
+
+        public static Content fromPublisher(Publisher<ContentChunk> publisher, String mediaType, Charset charset) {
+            return fromPublisher(publisher, mediaType + ";charset=" + charset.name());
+        }
     }
 }

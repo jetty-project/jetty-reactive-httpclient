@@ -22,6 +22,7 @@ import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.reactive.client.ContentChunk;
 import org.eclipse.jetty.reactive.client.ReactiveRequest;
+import org.eclipse.jetty.util.Callback;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
@@ -58,13 +59,24 @@ public class PublisherContentProvider implements ContentProvider.Typed, Subscrib
 
     @Override
     public void onNext(ContentChunk chunk) {
-        provider.offer(chunk.buffer, chunk.callback);
-        subscription.request(1);
+        provider.offer(chunk.buffer, new Callback.Nested(chunk.callback) {
+            @Override
+            public void succeeded() {
+                super.succeeded();
+                subscription.request(1);
+            }
+
+            @Override
+            public void failed(Throwable x) {
+                super.failed(x);
+                subscription.cancel();
+            }
+        });
     }
 
     @Override
     public void onError(Throwable failure) {
-        // TODO: what here ?
+        provider.failed(failure);
     }
 
     @Override

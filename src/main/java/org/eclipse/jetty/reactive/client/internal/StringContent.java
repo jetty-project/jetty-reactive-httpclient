@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.eclipse.jetty.reactive.client.util;
+package org.eclipse.jetty.reactive.client.internal;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -21,23 +21,22 @@ import java.util.Objects;
 
 import org.eclipse.jetty.reactive.client.ContentChunk;
 import org.eclipse.jetty.reactive.client.ReactiveRequest;
-import org.eclipse.jetty.reactive.client.internal.AbstractSinglePublisher;
 import org.eclipse.jetty.util.Callback;
 import org.reactivestreams.Subscriber;
 
 /**
  * <p>Utility class that provides a String as reactive content.</p>
  */
-public class TextContent extends AbstractSinglePublisher<ContentChunk> implements ReactiveRequest.Content {
+public class StringContent extends AbstractSinglePublisher<ContentChunk> implements ReactiveRequest.Content {
     private final String mediaType;
     private final Charset encoding;
     private final byte[] bytes;
     private boolean complete;
 
-    public TextContent(String text, String mediaType, Charset encoding) {
+    public StringContent(String string, String mediaType, Charset encoding) {
         this.mediaType = Objects.requireNonNull(mediaType);
         this.encoding = Objects.requireNonNull(encoding);
-        this.bytes = text.getBytes(encoding);
+        this.bytes = string.getBytes(encoding);
     }
 
     @Override

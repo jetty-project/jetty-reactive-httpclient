@@ -27,6 +27,10 @@ public class ContentChunk {
     public final ByteBuffer buffer;
     public final Callback callback;
 
+    public ContentChunk(ByteBuffer buffer) {
+        this(buffer, Callback.NOOP);
+    }
+
     public ContentChunk(ByteBuffer buffer, Callback callback) {
         this.buffer = Objects.requireNonNull(buffer);
         this.callback = Objects.requireNonNull(callback);

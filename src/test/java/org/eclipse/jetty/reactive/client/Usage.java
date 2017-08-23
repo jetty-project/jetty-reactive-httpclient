@@ -38,12 +38,15 @@ import io.reactivex.Flowable;
 import io.reactivex.Single;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.reactive.client.util.TextContent;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -57,13 +60,18 @@ public class Usage {
     private HttpClient httpClient;
 
     public void prepare(Handler handler) throws Exception {
-        server = new Server();
+        QueuedThreadPool serverThreads = new QueuedThreadPool();
+        serverThreads.setName("server");
+        server = new Server(serverThreads);
         connector = new ServerConnector(server);
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();
 
+        QueuedThreadPool clientThreads = new QueuedThreadPool();
+        clientThreads.setName("client");
         httpClient = new HttpClient();
+        httpClient.setExecutor(clientThreads);
         httpClient.start();
     }
 
@@ -251,13 +259,67 @@ public class Usage {
 
         String text = "Γειά σου Κόσμε";
         ReactiveRequest request = ReactiveRequest.newBuilder(httpClient, uri())
-                .content(new TextContent(text, "text/plain", StandardCharsets.UTF_8))
+                .content(ReactiveRequest.Content.fromString(text, "text/plain", StandardCharsets.UTF_8))
                 .build();
 
         String content = Single.fromPublisher(request.response(ReactiveResponse.Content.asString()))
                 .blockingGet();
 
         Assert.assertEquals(text, content);
+    }
+
+    @Test
+    public void flowableRequestBody() throws Exception {
+        prepare(new EmptyHandler() {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+                response.setContentType(request.getContentType());
+                IO.copy(request.getInputStream(), response.getOutputStream());
+            }
+        });
+
+        String data = "01234";
+        // Data from a generic stream (the regexp will split the data into single characters).
+        Flowable<String> stream = Flowable.fromArray(data.split("(?!^)"));
+
+        // Transform it to chunks, showing what you can use the callback for.
+        Charset charset = StandardCharsets.UTF_8;
+        ByteBufferPool bufferPool = httpClient.getByteBufferPool();
+        Flowable<ContentChunk> chunks = stream.map(item -> item.getBytes(charset))
+                .map(bytes -> {
+                    ByteBuffer buffer = bufferPool.acquire(bytes.length, true);
+                    BufferUtil.append(buffer, bytes, 0, bytes.length);
+                    return buffer;
+                })
+                .map(buffer -> new ContentChunk(buffer, new Callback() {
+                    @Override
+                    public void succeeded() {
+                        complete();
+                    }
+
+                    @Override
+                    public void failed(Throwable x) {
+                        complete();
+                    }
+
+                    @Override
+                    public InvocationType getInvocationType() {
+                        return InvocationType.NON_BLOCKING;
+                    }
+
+                    private void complete() {
+                        bufferPool.release(buffer);
+                    }
+                }));
+
+        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient, uri())
+                .content(ReactiveRequest.Content.fromPublisher(chunks, "text/plain", charset))
+                .build();
+
+        String content = Single.fromPublisher(request.response(ReactiveResponse.Content.asString()))
+                .blockingGet();
+
+        Assert.assertEquals(data, content);
     }
 
     @Test

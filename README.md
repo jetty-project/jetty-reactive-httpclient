@@ -128,15 +128,39 @@ Single<Long> contentLength = Flowable.fromPublisher(publisher)
 
 #### Providing Request Content
 
-Request content can be provided in a ReactiveStreams way, through a `Publisher`.
-Below you can find an example using the utility class `TextContent` (which _is-a_
-`Publisher`):
+Request content can be provided in a ReactiveStreams way, through the `ReactiveRequest.Content`
+class, which _is-a_ `Publisher` with the additional specification of the content length
+and the content type.
+Below you can find an example using the utility methods in `ReactiveRequest.Content`
+to create request content from a String:
 
 ```java
 HttpClient httpClient = ...;
 
+String text = "content";
 ReactiveRequest request = ReactiveRequest.newBuilder(httpClient, "http://localhost:8080/path")
-        .content(new TextContent(text, "text/plain", StandardCharsets.UTF_8))
+        .content(ReactiveRequest.Content.fromString(text, "text/plain", StandardCharsets.UTF_8))
+        .build();
+```
+
+Below another example of creating request content from another `Publisher`:
+
+```java
+HttpClient httpClient = ...;
+
+// The Publisher of request content.
+Publisher<T> publisher = ...;
+
+// Transform items of type T into ByteBuffer chunks.
+Charset charset = StandardCharsets.UTF_8;
+Flowable<ContentChunk> chunks = Flowable.fromPublisher(publisher)
+        .map((T t) -> toJSON(t))
+        .map((String json) -> json.getBytes(charset))
+        .map((byte[] bytes) -> ByteBuffer.wrap(bytes))
+        .map(ContentChunk::new);
+
+ReactiveRequest request = ReactiveRequest.newBuilder(httpClient, "http://localhost:8080/path")
+        .content(ReactiveRequest.Content.fromPublisher(chunks, "application/json", charset))
         .build();
 ```
 
