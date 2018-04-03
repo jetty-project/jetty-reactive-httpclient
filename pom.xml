@@ -206,6 +206,14 @@
               <release>8</release>
             </configuration>
           </plugin>
+          <plugin>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <configuration>
+              <additionalOptions>
+                <additionalOption>-html5</additionalOption>
+              </additionalOptions>
+            </configuration>
+          </plugin>
         </plugins>
       </build>
     </profile>

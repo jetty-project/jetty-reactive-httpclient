@@ -120,6 +120,7 @@ public class ReactiveRequest {
      * function.</p>
      *
      * @param contentFn the function that processes the response content
+     * @param <T> the element type of the processed response content
      * @return a Publisher for the processed content
      */
     public <T> Publisher<T> response(BiFunction<ReactiveResponse, Publisher<ContentChunk>, Publisher<T>> contentFn) {
