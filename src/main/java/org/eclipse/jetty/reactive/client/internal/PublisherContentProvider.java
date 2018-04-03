@@ -18,6 +18,7 @@ package org.eclipse.jetty.reactive.client.internal;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 
+import org.eclipse.jetty.client.AsyncContentProvider;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.reactive.client.ContentChunk;
@@ -26,13 +27,14 @@ import org.eclipse.jetty.util.Callback;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-public class PublisherContentProvider implements ContentProvider.Typed, Subscriber<ContentChunk> {
+public class PublisherContentProvider implements ContentProvider.Typed, AsyncContentProvider, Subscriber<ContentChunk> {
     private final DeferredContentProvider provider = new DeferredContentProvider();
     private final ReactiveRequest.Content content;
     private Subscription subscription;
 
     public PublisherContentProvider(ReactiveRequest.Content content) {
         this.content = content;
+        content.subscribe(this);
     }
 
     @Override
@@ -46,8 +48,12 @@ public class PublisherContentProvider implements ContentProvider.Typed, Subscrib
     }
 
     @Override
+    public void setListener(Listener listener) {
+        provider.setListener(listener);
+    }
+
+    @Override
     public Iterator<ByteBuffer> iterator() {
-        content.subscribe(this);
         return provider.iterator();
     }
 
