@@ -84,7 +84,6 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
                     stalled = true;
                     return;
                 } else {
-                    item = items.poll();
                     if (isTerminal(item)) {
                         terminal = true;
                     } else {
@@ -97,6 +96,7 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
                         }
                     }
                 }
+                item = items.poll();
             }
 
             if (logger.isDebugEnabled()) {
