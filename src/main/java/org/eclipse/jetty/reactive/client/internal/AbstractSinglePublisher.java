@@ -61,7 +61,7 @@ public abstract class AbstractSinglePublisher<T> implements Publisher<T>, Subscr
     public void request(long n) {
         Throwable failure = null;
         synchronized (this) {
-            if (cancelled) {
+            if (isCancelled()) {
                 return;
             }
             if (n <= 0) {
@@ -85,6 +85,12 @@ public abstract class AbstractSinglePublisher<T> implements Publisher<T>, Subscr
     public void cancel() {
         synchronized (this) {
             cancelled = true;
+        }
+    }
+
+    protected boolean isCancelled() {
+        synchronized (this) {
+            return cancelled;
         }
     }
 

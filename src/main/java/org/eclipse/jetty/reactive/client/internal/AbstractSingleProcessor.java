@@ -28,14 +28,21 @@ public abstract class AbstractSingleProcessor<I, O> extends AbstractSinglePublis
 
     @Override
     protected void onFailure(Throwable failure) {
-        upStream().cancel();
+        cancelUpStream();
         super.onFailure(failure);
     }
 
     @Override
     public void cancel() {
+        cancelUpStream();
         super.cancel();
-        upStream().cancel();
+    }
+
+    private void cancelUpStream() {
+        Subscription upStream = upStream();
+        if (upStream != null) {
+            upStream.cancel();
+        }
     }
 
     @Override
@@ -49,7 +56,11 @@ public abstract class AbstractSingleProcessor<I, O> extends AbstractSinglePublis
             if (this.upStream != null) {
                 throw new IllegalStateException("multiple subscriptions not supported");
             } else {
-                this.upStream = subscription;
+                if (isCancelled()) {
+                    subscription.cancel();
+                } else {
+                    this.upStream = subscription;
+                }
             }
         }
     }
