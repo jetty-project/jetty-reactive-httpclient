@@ -17,6 +17,7 @@ package org.eclipse.jetty.reactive.client;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -25,110 +26,34 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import io.reactivex.Emitter;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.reactive.client.internal.BufferingProcessor;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-public class Usage {
-    private Server server;
-    private ServerConnector connector;
-    private HttpClient httpClient;
-
-    public void prepare(Handler handler) throws Exception {
-        QueuedThreadPool serverThreads = new QueuedThreadPool();
-        serverThreads.setName("server");
-        server = new Server(serverThreads);
-        connector = new ServerConnector(server);
-        server.addConnector(connector);
-        server.setHandler(handler);
-        server.start();
-
-        QueuedThreadPool clientThreads = new QueuedThreadPool();
-        clientThreads.setName("client");
-        httpClient = new HttpClient();
-        httpClient.setExecutor(clientThreads);
-        httpClient.start();
-    }
-
-    @After
-    public void dispose() throws Exception {
-        if (httpClient != null) {
-            httpClient.stop();
-        }
-        if (server != null) {
-            server.stop();
-        }
-    }
-
-    private String uri() {
-        return "http://localhost:" + connector.getLocalPort();
-    }
-
+public class RxJava2Test extends AbstractTest {
     @Test
-    public void simpleReactiveUsage() throws Exception {
+    public void simpleUsage() throws Exception {
         prepare(new EmptyHandler());
 
-        Publisher<ReactiveResponse> publisher = ReactiveRequest.newBuilder(httpClient, uri()).build().response();
-
-        CountDownLatch latch = new CountDownLatch(1);
-        AtomicReference<ReactiveResponse> responseRef = new AtomicReference<>();
-        publisher.subscribe(new Subscriber<ReactiveResponse>() {
-            @Override
-            public void onSubscribe(Subscription subscription) {
-                subscription.request(1);
-            }
-
-            @Override
-            public void onNext(ReactiveResponse response) {
-                responseRef.set(response);
-            }
-
-            @Override
-            public void onError(Throwable failure) {
-            }
-
-            @Override
-            public void onComplete() {
-                latch.countDown();
-            }
-        });
-
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        ReactiveResponse response = responseRef.get();
-        Assert.assertNotNull(response);
-        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
-    }
-
-    @Test
-    public void simpleFlowableUsage() throws Exception {
-        prepare(new EmptyHandler());
-
-        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient.newRequest(uri())).build();
+        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient().newRequest(uri())).build();
         int status = Single.fromPublisher(request.response(ReactiveResponse.Content.discard()))
                 .map(ReactiveResponse::getStatus)
                 .blockingGet();
@@ -140,7 +65,7 @@ public class Usage {
     public void requestEvents() throws Exception {
         prepare(new EmptyHandler());
 
-        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient, uri()).build();
+        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient(), uri()).build();
         Publisher<ReactiveRequest.Event> events = request.requestEvents();
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -193,12 +118,12 @@ public class Usage {
     public void responseEvents() throws Exception {
         prepare(new EmptyHandler() {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
                 response.getOutputStream().write(0);
             }
         });
 
-        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient, uri()).build();
+        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient(), uri()).build();
         Publisher<ReactiveResponse.Event> events = request.responseEvents();
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -251,14 +176,14 @@ public class Usage {
     public void requestBody() throws Exception {
         prepare(new EmptyHandler() {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
                 response.setContentType(request.getContentType());
                 IO.copy(request.getInputStream(), response.getOutputStream());
             }
         });
 
         String text = "Γειά σου Κόσμε";
-        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient, uri())
+        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient(), uri())
                 .content(ReactiveRequest.Content.fromString(text, "text/plain", StandardCharsets.UTF_8))
                 .build();
 
@@ -272,7 +197,7 @@ public class Usage {
     public void flowableRequestBody() throws Exception {
         prepare(new EmptyHandler() {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
                 response.setContentType(request.getContentType());
                 IO.copy(request.getInputStream(), response.getOutputStream());
             }
@@ -284,7 +209,7 @@ public class Usage {
 
         // Transform it to chunks, showing what you can use the callback for.
         Charset charset = StandardCharsets.UTF_8;
-        ByteBufferPool bufferPool = httpClient.getByteBufferPool();
+        ByteBufferPool bufferPool = httpClient().getByteBufferPool();
         Flowable<ContentChunk> chunks = stream.map(item -> item.getBytes(charset))
                 .map(bytes -> {
                     ByteBuffer buffer = bufferPool.acquire(bytes.length, true);
@@ -312,7 +237,7 @@ public class Usage {
                     }
                 }));
 
-        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient, uri())
+        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient(), uri())
                 .content(ReactiveRequest.Content.fromPublisher(chunks, "text/plain", charset))
                 .build();
 
@@ -328,13 +253,13 @@ public class Usage {
         String data = "\u20ac";
         prepare(new EmptyHandler() {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
                 response.setContentType("text/plain;charset=" + charset.name());
                 response.getOutputStream().print(data);
             }
         });
 
-        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient, uri()).build();
+        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient(), uri()).build();
         String text = Single.fromPublisher(request.response(ReactiveResponse.Content.asString()))
                 .blockingGet();
 
@@ -347,12 +272,12 @@ public class Usage {
         new Random().nextBytes(data);
         prepare(new EmptyHandler() {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
                 response.getOutputStream().write(data);
             }
         });
 
-        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient, uri()).build();
+        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient(), uri()).build();
         byte[] bytes = Flowable.fromPublisher(request.response((response, content) -> content))
                 .flatMap(chunk -> Flowable.generate((Emitter<Byte> emitter) -> {
                     ByteBuffer buffer = chunk.buffer;
@@ -371,5 +296,70 @@ public class Usage {
                 .blockingGet();
 
         Assert.assertArrayEquals(data, bytes);
+    }
+
+    @Test
+    public void flowableResponseThenBody() throws Exception {
+        String pangram = "quizzical twins proved my hijack bug fix";
+        prepare(new EmptyHandler() {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
+                response.setContentType("text/plain");
+                response.getOutputStream().print(pangram);
+            }
+        });
+
+        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient(), uri()).build();
+        Pair<ReactiveResponse, Publisher<ContentChunk>> pair = Single.fromPublisher(request.response((response, content) ->
+                Flowable.just(new Pair<>(response, content)))).blockingGet();
+        ReactiveResponse response = pair._1;
+
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        BufferingProcessor processor = new BufferingProcessor(response);
+        pair._2.subscribe(processor);
+        String responseContent = Single.fromPublisher(processor).blockingGet();
+
+        Assert.assertEquals(pangram, responseContent);
+    }
+
+    @Test
+    public void flowableResponsePipedToRequest() throws Exception {
+        String data1 = "data1";
+        String data2 = "data2";
+        prepare(new EmptyHandler() {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
+                response.setContentType("text/plain");
+                PrintWriter writer = response.getWriter();
+                if ("/1".equals(target)) {
+                    writer.write(data1);
+                } else if ("/2".equals(target)) {
+                    if (IO.toString(request.getInputStream()).equals(data1)) {
+                        writer.write(data2);
+                    }
+                }
+            }
+        });
+
+        ReactiveRequest request1 = ReactiveRequest.newBuilder(httpClient().newRequest(uri()).path("/1")).build();
+        Publisher<String> sender1 = request1.response((response1, content1) -> {
+            ReactiveRequest request2 = ReactiveRequest.newBuilder(httpClient().newRequest(uri()).path("/2"))
+                    .content(ReactiveRequest.Content.fromPublisher(content1, "text/plain")).build();
+            return request2.response(ReactiveResponse.Content.asString());
+        });
+        String result = Single.fromPublisher(sender1).blockingGet();
+
+        Assert.assertEquals(data2, result);
+    }
+
+    public static class Pair<X, Y> {
+        public final X _1;
+        public final Y _2;
+
+        public Pair(X x, Y y) {
+            _1 = x;
+            _2 = y;
+        }
     }
 }
