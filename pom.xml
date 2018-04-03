@@ -84,6 +84,33 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <configuration>
+          <header>copyright-header.txt</header>
+          <failIfMissing>true</failIfMissing>
+          <strictCheck>true</strictCheck>
+          <properties>
+            <copyright-range>${project.inceptionYear}-2018</copyright-range>
+          </properties>
+          <mapping>
+            <java>SLASHSTAR_STYLE</java>
+          </mapping>
+          <includes>
+            <include>**/*.java</include>
+          </includes>
+        </configuration>
+        <executions>
+          <execution>
+            <id>check-headers</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
 
     <pluginManagement>
@@ -130,6 +157,11 @@
         <plugin>
           <artifactId>maven-source-plugin</artifactId>
           <version>3.0.1</version>
+        </plugin>
+        <plugin>
+          <groupId>com.mycila</groupId>
+          <artifactId>license-maven-plugin</artifactId>
+          <version>3.0</version>
         </plugin>
       </plugins>
     </pluginManagement>
