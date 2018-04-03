@@ -140,4 +140,9 @@ public class ResponseListenerPublisher<T> extends AbstractSingleProcessor<T, T> 
         }
         request.getRequest().send(this);
     }
+
+    @Override
+    public String toString() {
+        return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), request);
+    }
 }

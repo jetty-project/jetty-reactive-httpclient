@@ -35,4 +35,9 @@ public class ContentChunk {
         this.buffer = Objects.requireNonNull(buffer);
         this.callback = Objects.requireNonNull(callback);
     }
+
+    @Override
+    public String toString() {
+        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+    }
 }

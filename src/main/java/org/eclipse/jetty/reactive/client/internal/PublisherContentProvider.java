@@ -83,4 +83,9 @@ public class PublisherContentProvider implements ContentProvider.Typed, Subscrib
     public void onComplete() {
         provider.close();
     }
+
+    @Override
+    public String toString() {
+        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+    }
 }

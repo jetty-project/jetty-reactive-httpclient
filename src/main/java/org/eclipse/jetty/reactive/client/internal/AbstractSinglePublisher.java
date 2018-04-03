@@ -18,6 +18,8 @@ package org.eclipse.jetty.reactive.client.internal;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A Publisher that supports a single Subscriber.
@@ -25,6 +27,7 @@ import org.reactivestreams.Subscription;
  * @param <T> the type of items emitted by this Publisher
  */
 public abstract class AbstractSinglePublisher<T> implements Publisher<T>, Subscription {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private Subscriber<? super T> subscriber;
     private boolean cancelled;
 
@@ -41,6 +44,9 @@ public abstract class AbstractSinglePublisher<T> implements Publisher<T>, Subscr
         if (failure != null) {
             onFailure(failure);
         } else {
+            if (logger.isDebugEnabled()) {
+                logger.debug("{} subscription from {}", this, subscriber);
+            }
             subscriber.onSubscribe(this);
         }
     }
@@ -80,5 +86,10 @@ public abstract class AbstractSinglePublisher<T> implements Publisher<T>, Subscr
         synchronized (this) {
             cancelled = true;
         }
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
     }
 }

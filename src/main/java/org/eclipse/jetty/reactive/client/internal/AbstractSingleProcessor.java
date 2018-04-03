@@ -69,4 +69,9 @@ public abstract class AbstractSingleProcessor<I, O> extends AbstractSinglePublis
     public void onComplete() {
         downStream().onComplete();
     }
+
+    @Override
+    public String toString() {
+        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+    }
 }

@@ -19,15 +19,21 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 
 import org.reactivestreams.Subscriber;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
     public static final Terminal COMPLETE = Subscriber::onComplete;
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Queue<Object> items = new ArrayDeque<>();
     private long demand;
     private boolean stalled = true;
 
     public void offer(T item) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("offered item {}", item);
+        }
         process(item);
     }
 
@@ -91,6 +97,10 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
                         }
                     }
                 }
+            }
+
+            if (logger.isDebugEnabled()) {
+                logger.debug("processing {} item {}", terminal ? "last" : "next", item);
             }
 
             if (terminal) {
