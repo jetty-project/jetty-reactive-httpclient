@@ -58,9 +58,10 @@
   </organization>
 
   <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jetty-version>9.4.9.v20180320</jetty-version>
     <slf4j-version>1.7.25</slf4j-version>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <log4j2-version>2.10.0</log4j2-version>
   </properties>
 
   <build>
@@ -202,9 +203,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-log4j12</artifactId>
-      <version>${slf4j-version}</version>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j-impl</artifactId>
+      <version>${log4j2-version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
