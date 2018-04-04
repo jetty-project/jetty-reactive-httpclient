@@ -58,10 +58,10 @@ Request request = httpClient.newRequest("http://localhost:8080/path");
 // Wrap the request using the API provided by this project.
 ReactiveRequest reactiveRequest = ReactiveRequest.newBuilder(request).build();
 
-// Obtain a ReactiveStreams Publisher for the response, discarding the response content
+// Obtain a ReactiveStreams Publisher for the response, discarding the response content.
 Publisher<ReactiveResponse> publisher = reactiveRequest.response(ReactiveResponse.Content.discard());
 
-// Wrap the ReactiveStreams Publisher with RxJava
+// Wrap the ReactiveStreams Publisher with RxJava.
 int status = Single.fromPublisher(publisher)
         .map(ReactiveResponse::getStatus)
         .blockingGet();
