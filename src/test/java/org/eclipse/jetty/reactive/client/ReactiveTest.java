@@ -20,11 +20,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpStatus;
-import org.junit.Assert;
-import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class ReactiveTest extends AbstractTest {
     @Test
@@ -59,6 +59,6 @@ public class ReactiveTest extends AbstractTest {
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         ReactiveResponse response = responseRef.get();
         Assert.assertNotNull(response);
-        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertEquals(response.getStatus(), HttpStatus.OK_200);
     }
 }

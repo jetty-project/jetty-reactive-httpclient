@@ -15,32 +15,37 @@
  */
 package org.eclipse.jetty.reactive.client.internal;
 
-import java.util.Objects;
+import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.reactive.client.ContentChunk;
-import org.eclipse.jetty.reactive.client.ReactiveRequest;
 import org.reactivestreams.Publisher;
+import org.reactivestreams.tck.PublisherVerification;
+import org.reactivestreams.tck.TestEnvironment;
+import org.testng.annotations.BeforeMethod;
 
-public class PublisherContent extends AbstractSingleProcessor<ContentChunk, ContentChunk> implements ReactiveRequest.Content {
-    private final String contentType;
+public class StringContentTCKTest extends PublisherVerification<ContentChunk> {
+    public StringContentTCKTest() {
+        super(new TestEnvironment());
+    }
 
-    public PublisherContent(Publisher<ContentChunk> publisher, String contentType) {
-        this.contentType = Objects.requireNonNull(contentType);
-        publisher.subscribe(this);
+    @BeforeMethod
+    public void printTestName(Method method) {
+        System.err.printf("Running %s.%s()%n", getClass().getName(), method.getName());
     }
 
     @Override
-    public long getLength() {
-        return -1;
+    public Publisher<ContentChunk> createPublisher(long elements) {
+        return new StringContent("data", "text/plain", StandardCharsets.UTF_8);
     }
 
     @Override
-    public String getContentType() {
-        return contentType;
+    public Publisher<ContentChunk> createFailedPublisher() {
+        return null;
     }
 
     @Override
-    public void onNext(ContentChunk chunk) {
-        downStreamOnNext(chunk);
+    public long maxElementsFromPublisher() {
+        return 1;
     }
 }

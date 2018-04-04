@@ -28,12 +28,12 @@ public class DiscardingProcessor extends AbstractSingleProcessor<ContentChunk, R
     @Override
     public void onNext(ContentChunk chunk) {
         chunk.callback.succeeded();
-        upStream().request(1);
+        upStreamRequest(1);
     }
 
     @Override
     public void onComplete() {
-        downStream().onNext(response);
+        downStreamOnNext(response);
         super.onComplete();
     }
 }

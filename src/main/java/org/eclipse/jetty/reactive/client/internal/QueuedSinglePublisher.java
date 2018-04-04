@@ -32,12 +32,15 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
 
     public void offer(T item) {
         if (logger.isDebugEnabled()) {
-            logger.debug("offered item {}", item);
+            logger.debug("offered item {} to {}", item, this);
         }
         process(item);
     }
 
     public void complete() {
+        if (logger.isDebugEnabled()) {
+            logger.debug("completed {}", this);
+        }
         process(COMPLETE);
     }
 
@@ -46,35 +49,38 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
     }
 
     @Override
-    protected void onRequest(long n) {
+    protected void onRequest(Subscriber<? super T> subscriber, long n) {
         boolean proceed = false;
         synchronized (this) {
-            demand += n;
+            demand = cappedAdd(demand, n);
             if (stalled) {
                 stalled = false;
                 proceed = true;
             }
         }
         if (proceed) {
-            proceed();
+            proceed(subscriber);
         }
     }
 
     private void process(Object item) {
-        boolean proceed = false;
+        Subscriber<? super T> subscriber;
         synchronized (this) {
             items.offer(item);
-            if (stalled) {
-                stalled = false;
-                proceed = true;
+            subscriber = subscriber();
+            if (subscriber != null) {
+                if (stalled) {
+                    stalled = false;
+                }
             }
+
         }
-        if (proceed) {
-            proceed();
+        if (subscriber != null) {
+            proceed(subscriber);
         }
     }
 
-    private void proceed() {
+    private void proceed(Subscriber<? super T> subscriber) {
         Object item;
         boolean terminal;
         while (true) {
@@ -84,33 +90,29 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
                     stalled = true;
                     return;
                 } else {
-                    if (isTerminal(item)) {
-                        terminal = true;
+                    if (demand > 0) {
+                        --demand;
+                        terminal = isTerminal(item);
                     } else {
-                        if (demand > 0) {
-                            --demand;
-                            terminal = false;
-                        } else {
-                            stalled = true;
-                            return;
-                        }
+                        stalled = true;
+                        return;
                     }
                 }
                 item = items.poll();
             }
 
             if (logger.isDebugEnabled()) {
-                logger.debug("processing {} item {}", terminal ? "last" : "next", item);
+                logger.debug("processing {} item {} by {}", terminal ? "last" : "next", item, this);
             }
 
             if (terminal) {
                 @SuppressWarnings("unchecked")
                 Terminal<T> t = (Terminal<T>)item;
-                t.notify(subscriber());
+                t.notify(subscriber);
             } else {
                 @SuppressWarnings("unchecked")
                 T t = (T)item;
-                subscriber().onNext(t);
+                subscriber.onNext(t);
             }
         }
     }

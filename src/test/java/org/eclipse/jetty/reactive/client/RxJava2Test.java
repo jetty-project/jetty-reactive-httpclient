@@ -42,11 +42,11 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.junit.Assert;
-import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class RxJava2Test extends AbstractTest {
     @Test
@@ -58,7 +58,7 @@ public class RxJava2Test extends AbstractTest {
                 .map(ReactiveResponse::getStatus)
                 .blockingGet();
 
-        Assert.assertEquals(HttpStatus.OK_200, status);
+        Assert.assertEquals(status, HttpStatus.OK_200);
     }
 
     @Test
@@ -100,7 +100,7 @@ public class RxJava2Test extends AbstractTest {
 
         ReactiveResponse response = Single.fromPublisher(request.response()).blockingGet();
 
-        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertEquals(response.getStatus(), HttpStatus.OK_200);
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         List<String> expected = Stream.of(
@@ -111,7 +111,7 @@ public class RxJava2Test extends AbstractTest {
                 ReactiveRequest.Event.Type.SUCCESS)
                 .map(Enum::name)
                 .collect(Collectors.toList());
-        Assert.assertEquals(expected, names);
+        Assert.assertEquals(names, expected);
     }
 
     @Test
@@ -158,7 +158,7 @@ public class RxJava2Test extends AbstractTest {
 
         ReactiveResponse response = Single.fromPublisher(request.response()).blockingGet();
 
-        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertEquals(response.getStatus(), HttpStatus.OK_200);
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         List<String> expected = Stream.of(
@@ -169,7 +169,7 @@ public class RxJava2Test extends AbstractTest {
                 ReactiveResponse.Event.Type.COMPLETE)
                 .map(Enum::name)
                 .collect(Collectors.toList());
-        Assert.assertEquals(expected, names);
+        Assert.assertEquals(names, expected);
     }
 
     @Test
@@ -190,7 +190,7 @@ public class RxJava2Test extends AbstractTest {
         String content = Single.fromPublisher(request.response(ReactiveResponse.Content.asString()))
                 .blockingGet();
 
-        Assert.assertEquals(text, content);
+        Assert.assertEquals(content, text);
     }
 
     @Test
@@ -244,7 +244,7 @@ public class RxJava2Test extends AbstractTest {
         String content = Single.fromPublisher(request.response(ReactiveResponse.Content.asString()))
                 .blockingGet();
 
-        Assert.assertEquals(data, content);
+        Assert.assertEquals(content, data);
     }
 
     @Test
@@ -263,7 +263,7 @@ public class RxJava2Test extends AbstractTest {
         String text = Single.fromPublisher(request.response(ReactiveResponse.Content.asString()))
                 .blockingGet();
 
-        Assert.assertEquals(data, text);
+        Assert.assertEquals(text, data);
     }
 
     @Test
@@ -295,7 +295,7 @@ public class RxJava2Test extends AbstractTest {
                 .map(ByteArrayOutputStream::toByteArray)
                 .blockingGet();
 
-        Assert.assertArrayEquals(data, bytes);
+        Assert.assertEquals(bytes, data);
     }
 
     @Test
@@ -314,13 +314,13 @@ public class RxJava2Test extends AbstractTest {
                 Flowable.just(new Pair<>(response, content)))).blockingGet();
         ReactiveResponse response = pair._1;
 
-        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertEquals(response.getStatus(), HttpStatus.OK_200);
 
         BufferingProcessor processor = new BufferingProcessor(response);
         pair._2.subscribe(processor);
         String responseContent = Single.fromPublisher(processor).blockingGet();
 
-        Assert.assertEquals(pangram, responseContent);
+        Assert.assertEquals(responseContent, pangram);
     }
 
     @Test
@@ -350,7 +350,7 @@ public class RxJava2Test extends AbstractTest {
         });
         String result = Single.fromPublisher(sender1).blockingGet();
 
-        Assert.assertEquals(data2, result);
+        Assert.assertEquals(result, data2);
     }
 
     public static class Pair<X, Y> {

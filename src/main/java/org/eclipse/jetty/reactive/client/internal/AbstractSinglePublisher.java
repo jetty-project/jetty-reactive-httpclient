@@ -15,6 +15,9 @@
  */
 package org.eclipse.jetty.reactive.client.internal;
 
+import java.util.Objects;
+import java.util.concurrent.CancellationException;
+
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -27,27 +30,40 @@ import org.slf4j.LoggerFactory;
  * @param <T> the type of items emitted by this Publisher
  */
 public abstract class AbstractSinglePublisher<T> implements Publisher<T>, Subscription {
+    protected static long cappedAdd(long x, long y) {
+        long r = x + y;
+        // Overflow ?
+        if (((x ^ r) & (y ^ r)) < 0) {
+            return Long.MAX_VALUE;
+        }
+        return r;
+    }
+
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private Subscriber<? super T> subscriber;
     private boolean cancelled;
 
     @Override
     public void subscribe(Subscriber<? super T> subscriber) {
+        subscriber = Objects.requireNonNull(subscriber, "invalid 'null' subscriber");
         Throwable failure = null;
         synchronized (this) {
             if (this.subscriber != null) {
                 failure = new IllegalStateException("multiple subscribers not supported");
             } else {
-                this.subscriber = subscriber;
+                if (isCancelled()) {
+                    failure = new CancellationException();
+                } else {
+                    this.subscriber = subscriber;
+                }
             }
         }
+        if (logger.isDebugEnabled()) {
+            logger.debug("{} subscription from {}", this, subscriber);
+        }
+        subscriber.onSubscribe(this);
         if (failure != null) {
-            onFailure(failure);
-        } else {
-            if (logger.isDebugEnabled()) {
-                logger.debug("{} subscription from {}", this, subscriber);
-            }
-            subscriber.onSubscribe(this);
+            onFailure(subscriber, failure);
         }
     }
 
@@ -59,32 +75,40 @@ public abstract class AbstractSinglePublisher<T> implements Publisher<T>, Subscr
 
     @Override
     public void request(long n) {
+        Subscriber<? super T> subscriber;
         Throwable failure = null;
         synchronized (this) {
             if (isCancelled()) {
                 return;
             }
+            subscriber = subscriber();
             if (n <= 0) {
                 failure = new IllegalArgumentException("reactive stream violation rule 3.9");
             }
         }
         if (failure != null) {
-            onFailure(failure);
+            onFailure(subscriber, failure);
         } else {
-            onRequest(n);
+            onRequest(subscriber, n);
         }
     }
 
-    protected abstract void onRequest(long n);
+    protected abstract void onRequest(Subscriber<? super T> subscriber, long n);
 
-    protected void onFailure(Throwable failure) {
-        subscriber().onError(failure);
+    protected void onFailure(Subscriber<? super T> subscriber, Throwable failure) {
+        subscriber.onError(failure);
     }
 
     @Override
     public void cancel() {
+        Subscriber<? super T> subscriber;
         synchronized (this) {
             cancelled = true;
+            subscriber = this.subscriber;
+            this.subscriber = null;
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug("{} cancelled subscription from {}", this, subscriber);
         }
     }
 

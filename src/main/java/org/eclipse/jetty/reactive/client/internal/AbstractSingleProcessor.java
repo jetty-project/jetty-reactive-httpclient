@@ -15,53 +15,86 @@
  */
 package org.eclipse.jetty.reactive.client.internal;
 
+import java.util.Objects;
+
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 public abstract class AbstractSingleProcessor<I, O> extends AbstractSinglePublisher<O> implements Processor<I, O> {
     private Subscription upStream;
+    private long demand;
 
     protected Subscriber<? super O> downStream() {
         return subscriber();
     }
 
     @Override
-    protected void onFailure(Throwable failure) {
-        cancelUpStream();
-        super.onFailure(failure);
+    protected void onFailure(Subscriber<? super O> subscriber, Throwable failure) {
+        upStreamCancel();
+        super.onFailure(subscriber, failure);
     }
 
     @Override
     public void cancel() {
-        cancelUpStream();
+        upStreamCancel();
         super.cancel();
     }
 
-    private void cancelUpStream() {
-        Subscription upStream = upStream();
+    private void upStreamCancel() {
+        upStreamCancel(upStream());
+    }
+
+    private void upStreamCancel(Subscription upStream) {
         if (upStream != null) {
             upStream.cancel();
         }
     }
 
     @Override
-    protected void onRequest(long n) {
-        upStream().request(n);
+    protected void onRequest(Subscriber<? super O> subscriber, long n) {
+        long demand;
+        Subscription upStream;
+        synchronized (this) {
+            demand = cappedAdd(this.demand, n);
+            upStream = upStream();
+            this.demand = upStream == null ? demand : 0;
+        }
+        upStreamRequest(upStream, demand);
+    }
+
+    protected void upStreamRequest(long n) {
+        upStreamRequest(upStream(), n);
+    }
+
+    private void upStreamRequest(Subscription upStream, long demand) {
+        if (upStream != null) {
+            upStream.request(demand);
+        }
     }
 
     @Override
     public void onSubscribe(Subscription subscription) {
+        subscription = Objects.requireNonNull(subscription, "invalid 'null' subscription");
+        long demand = 0;
+        boolean cancel = false;
         synchronized (this) {
             if (this.upStream != null) {
-                throw new IllegalStateException("multiple subscriptions not supported");
+                cancel = true;
             } else {
                 if (isCancelled()) {
-                    subscription.cancel();
+                    cancel = true;
                 } else {
                     this.upStream = subscription;
+                    demand = this.demand;
+                    this.demand = 0;
                 }
             }
+        }
+        if (cancel) {
+            subscription.cancel();
+        } else if (demand > 0) {
+            subscription.request(demand);
         }
     }
 
@@ -71,14 +104,27 @@ public abstract class AbstractSingleProcessor<I, O> extends AbstractSinglePublis
         }
     }
 
+    protected void downStreamOnNext(O item) {
+        Subscriber<? super O> downStream = downStream();
+        if (downStream != null) {
+            downStream.onNext(item);
+        }
+    }
+
     @Override
     public void onError(Throwable throwable) {
-        downStream().onError(throwable);
+        Subscriber<? super O> downStream = downStream();
+        if (downStream != null) {
+            downStream.onError(throwable);
+        }
     }
 
     @Override
     public void onComplete() {
-        downStream().onComplete();
+        Subscriber<? super O> downStream = downStream();
+        if (downStream != null) {
+            downStream.onComplete();
+        }
     }
 
     @Override

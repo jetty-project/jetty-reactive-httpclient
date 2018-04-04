@@ -62,6 +62,7 @@
     <jetty-version>9.4.9.v20180320</jetty-version>
     <slf4j-version>1.7.25</slf4j-version>
     <log4j2-version>2.10.0</log4j2-version>
+    <reactivestreams-version>1.0.2</reactivestreams-version>
   </properties>
 
   <build>
@@ -242,7 +243,7 @@
     <dependency>
       <groupId>org.reactivestreams</groupId>
       <artifactId>reactive-streams</artifactId>
-      <version>1.0.2</version>
+      <version>${reactivestreams-version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -255,6 +256,12 @@
       <version>${slf4j-version}</version>
     </dependency>
 
+    <dependency>
+      <groupId>org.reactivestreams</groupId>
+      <artifactId>reactive-streams-tck</artifactId>
+      <version>${reactivestreams-version}</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>io.reactivex.rxjava2</groupId>
       <artifactId>rxjava</artifactId>
@@ -274,9 +281,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.12</version>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <version>6.14.2</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

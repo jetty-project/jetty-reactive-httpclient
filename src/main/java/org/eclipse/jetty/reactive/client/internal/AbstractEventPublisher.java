@@ -18,89 +18,66 @@ package org.eclipse.jetty.reactive.client.internal;
 import org.reactivestreams.Subscriber;
 
 public abstract class AbstractEventPublisher<T> extends AbstractSinglePublisher<T> {
-    private State state = State.EMITTING;
-    private Throwable failure;
     private long demand;
+    private boolean initial;
+    private boolean terminated;
+    private Throwable failure;
 
     @Override
-    protected void onRequest(long n) {
-        boolean complete = false;
+    protected void onRequest(Subscriber<? super T> subscriber, long n) {
+        boolean notify = false;
         Throwable failure = null;
         synchronized (this) {
-            demand += n;
-            switch (state) {
-                case COMPLETING:
-                    state = State.TERMINATED;
-                    complete = true;
-                    break;
-                case FAILING:
-                    state = State.TERMINATED;
-                    failure = this.failure;
-                    break;
-                default:
-                    break;
+            demand = cappedAdd(demand, n);
+            boolean isInitial = initial;
+            initial = false;
+            if (isInitial && terminated) {
+                notify = true;
+                failure = this.failure;
             }
         }
-        if (complete) {
-            subscriber().onComplete();
-        } else if (failure != null) {
-            subscriber().onError(failure);
-        }
-    }
-
-    protected void emit(T event) {
-        boolean emit = false;
-        synchronized (this) {
-            if (demand > 0) {
-                --demand;
-                emit = true;
-            }
-        }
-        if (emit) {
-            subscriber().onNext(event);
-        }
-    }
-
-    protected void succeed() {
-        synchronized (this) {
-            state = State.COMPLETING;
-        }
-        Subscriber<? super T> subscriber = subscriber();
-        if (subscriber != null) {
-            boolean complete = false;
-            synchronized (this) {
-                if (state == State.COMPLETING) {
-                    state = State.TERMINATED;
-                    complete = true;
-                }
-            }
-            if (complete) {
+        if (notify) {
+            if (failure == null) {
                 subscriber.onComplete();
-            }
-        }
-    }
-
-    protected void fail(Throwable failure) {
-        synchronized (this) {
-            state = State.FAILING;
-            this.failure = failure;
-        }
-        Subscriber<? super T> subscriber = subscriber();
-        if (subscriber != null) {
-            boolean error = false;
-            synchronized (this) {
-                if (state == State.FAILING) {
-                    state = State.TERMINATED;
-                    error = true;
-                }
-            }
-            if (error) {
+            } else {
                 subscriber.onError(failure);
             }
         }
     }
 
-    private enum State {
-        EMITTING, COMPLETING, FAILING, TERMINATED
+    protected void emit(T event) {
+        Subscriber<? super T> subscriber = null;
+        synchronized (this) {
+            if (!isCancelled() && demand > 0) {
+                --demand;
+                subscriber = subscriber();
+            }
+        }
+        if (subscriber != null) {
+            subscriber.onNext(event);
+        }
+    }
+
+    protected void succeed() {
+        Subscriber<? super T> subscriber;
+        synchronized (this) {
+            terminated = true;
+            subscriber = subscriber();
+        }
+        if (subscriber != null) {
+            subscriber.onComplete();
+        }
+    }
+
+    protected void fail(Throwable failure) {
+        Subscriber<? super T> subscriber;
+        synchronized (this) {
+            terminated = true;
+            this.failure = failure;
+            subscriber = subscriber();
+        }
+        if (subscriber != null) {
+            subscriber.onError(failure);
+        }
     }
 }

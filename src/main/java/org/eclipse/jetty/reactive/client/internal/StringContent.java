@@ -50,10 +50,9 @@ public class StringContent extends AbstractSinglePublisher<ContentChunk> impleme
     }
 
     @Override
-    protected void onRequest(long n) {
+    protected void onRequest(Subscriber<? super ContentChunk> subscriber, long n) {
         if (!complete) {
             complete = true;
-            Subscriber<? super ContentChunk> subscriber = subscriber();
             subscriber.onNext(new ContentChunk(ByteBuffer.wrap(bytes), Callback.NOOP));
             subscriber.onComplete();
         }

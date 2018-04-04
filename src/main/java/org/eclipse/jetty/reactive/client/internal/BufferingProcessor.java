@@ -39,7 +39,7 @@ public class BufferingProcessor extends AbstractSingleProcessor<ContentChunk, St
         buffer.get(bytes);
         buffers.add(bytes);
         chunk.callback.succeeded();
-        upStream().request(1);
+        upStreamRequest(1);
     }
 
     @Override
@@ -58,7 +58,8 @@ public class BufferingProcessor extends AbstractSingleProcessor<ContentChunk, St
             encoding = StandardCharsets.UTF_8.name();
         }
 
-        downStream().onNext(new String(bytes, Charset.forName(encoding)));
+        downStreamOnNext(new String(bytes, Charset.forName(encoding)));
+
         super.onComplete();
     }
 }

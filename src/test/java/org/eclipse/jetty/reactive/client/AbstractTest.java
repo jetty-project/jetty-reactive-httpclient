@@ -15,25 +15,17 @@
  */
 package org.eclipse.jetty.reactive.client;
 
+import java.lang.reflect.Method;
+
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 
 public class AbstractTest {
-    @Rule
-    public final TestWatcher testName = new TestWatcher() {
-        @Override
-        protected void starting(Description description) {
-            super.starting(description);
-            System.err.printf("Running %s.%s%n", description.getTestClass().getName(), description.getMethodName());
-        }
-    };
     private HttpClient httpClient;
     private Server server;
     private ServerConnector connector;
@@ -54,7 +46,12 @@ public class AbstractTest {
         httpClient.start();
     }
 
-    @After
+    @BeforeMethod
+    public void printTestName(Method method) {
+        System.err.printf("Running %s.%s()%n", getClass().getName(), method.getName());
+    }
+
+    @AfterMethod
     public void dispose() throws Exception {
         if (httpClient != null) {
             httpClient.stop();

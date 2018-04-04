@@ -27,7 +27,7 @@ import org.eclipse.jetty.reactive.client.ReactiveResponse;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscription;
+import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +46,6 @@ public class ResponseListenerPublisher<T> extends AbstractSingleProcessor<T, T> 
     private final ReactiveRequest request;
     private final BiFunction<ReactiveResponse, Publisher<ContentChunk>, Publisher<T>> contentFn;
     private boolean requestSent;
-    private long demand;
 
     public ResponseListenerPublisher(ReactiveRequest request, BiFunction<ReactiveResponse, Publisher<ContentChunk>, Publisher<T>> contentFn) {
         this.request = request;
@@ -107,31 +106,21 @@ public class ResponseListenerPublisher<T> extends AbstractSingleProcessor<T, T> 
     }
 
     @Override
-    public void onSubscribe(Subscription subscription) {
-        super.onSubscribe(subscription);
-        subscription.request(demand);
-    }
-
-    @Override
-    protected void onRequest(long n) {
-        boolean send = false;
+    protected void onRequest(Subscriber<? super T> subscriber, long n) {
+        boolean send;
         synchronized (this) {
-            if (!requestSent) {
-                requestSent = true;
-                demand += n;
-                send = true;
-            }
+            send = !requestSent;
+            requestSent = true;
         }
         if (send) {
             send();
-        } else {
-            super.onRequest(n);
         }
+        super.onRequest(subscriber, n);
     }
 
     @Override
     public void onNext(T t) {
-        downStream().onNext(t);
+        downStreamOnNext(t);
     }
 
     private void send() {
