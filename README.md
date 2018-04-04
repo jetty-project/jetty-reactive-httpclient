@@ -1,4 +1,4 @@
-## Jetty ReactiveStream HttpClient
+# Jetty ReactiveStream HttpClient
 
 A [ReactiveStreams](http://www.reactive-streams.org/) wrapper around 
 [Jetty](https://eclipse.org/jetty)'s 
