@@ -46,9 +46,15 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.testng.Assert;
+import org.testng.annotations.Factory;
 import org.testng.annotations.Test;
 
 public class RxJava2Test extends AbstractTest {
+    @Factory(dataProvider = "protocols", dataProviderClass = AbstractTest.class)
+    public RxJava2Test(String protocol) {
+        super(protocol);
+    }
+
     @Test
     public void simpleUsage() throws Exception {
         prepare(new EmptyHandler());

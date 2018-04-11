@@ -23,13 +23,12 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import io.reactivex.Flowable;
-import org.eclipse.jetty.reactive.client.AbstractTest;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public class SingleProcessorTest extends AbstractTest {
+public class SingleProcessorTest {
     @Test
     public void testDemandWithoutUpStreamIsRemembered() throws Exception {
         AbstractSingleProcessor<String, String> processor = new AbstractSingleProcessor<String, String>() {

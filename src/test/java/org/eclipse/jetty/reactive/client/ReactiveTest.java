@@ -24,9 +24,15 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.testng.Assert;
+import org.testng.annotations.Factory;
 import org.testng.annotations.Test;
 
 public class ReactiveTest extends AbstractTest {
+    @Factory(dataProvider = "protocols", dataProviderClass = AbstractTest.class)
+    public ReactiveTest(String protocol) {
+        super(protocol);
+    }
+
     @Test
     public void simpleReactiveUsage() throws Exception {
         prepare(new EmptyHandler());

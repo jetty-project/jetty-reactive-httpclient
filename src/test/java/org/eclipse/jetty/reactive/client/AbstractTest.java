@@ -18,37 +18,80 @@ package org.eclipse.jetty.reactive.client;
 import java.lang.reflect.Method;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpClientTransport;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.http2.client.HTTP2Client;
+import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 
 public class AbstractTest {
+    @DataProvider(name = "protocols")
+    public static Object[][] protocols() {
+        return new Object[][]{
+                new Object[]{"http"},
+                new Object[]{"h2c"}
+        };
+    }
+
+    private final HttpConfiguration httpConfiguration = new HttpConfiguration();
+    private final String protocol;
     private HttpClient httpClient;
     private Server server;
     private ServerConnector connector;
+
+    public AbstractTest(String protocol) {
+        this.protocol = protocol;
+    }
+
+    @BeforeMethod
+    public void printTestName(Method method) {
+        System.err.printf("Running %s.%s() [%s]%n", getClass().getName(), method.getName(), protocol);
+    }
 
     public void prepare(Handler handler) throws Exception {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
-        connector = new ServerConnector(server);
+        connector = new ServerConnector(server, createServerConnectionFactory(protocol));
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();
 
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
-        httpClient = new HttpClient();
+        httpClient = new HttpClient(createClientTransport(protocol), null);
         httpClient.setExecutor(clientThreads);
         httpClient.start();
     }
 
-    @BeforeMethod
-    public void printTestName(Method method) {
-        System.err.printf("Running %s.%s()%n", getClass().getName(), method.getName());
+    private ConnectionFactory createServerConnectionFactory(String protocol) {
+        switch (protocol) {
+            case "h2c":
+                return new HTTP2CServerConnectionFactory(httpConfiguration);
+            default:
+                return new HttpConnectionFactory(httpConfiguration);
+        }
+    }
+
+    private HttpClientTransport createClientTransport(String protocol) {
+        switch (protocol) {
+            case "h2c":
+                HTTP2Client http2Client = new HTTP2Client();
+                http2Client.setSelectors(1);
+                return new HttpClientTransportOverHTTP2(http2Client);
+            default:
+                return new HttpClientTransportOverHTTP(1);
+        }
     }
 
     @AfterMethod
