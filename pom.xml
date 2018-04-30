@@ -5,7 +5,7 @@
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-reactive-httpclient</artifactId>
   <version>1.0.1-SNAPSHOT</version>
-  <packaging>jar</packaging>
+  <packaging>bundle</packaging>
   <name>Jetty ReactiveStreams HttpClient</name>
 
   <url>https://github.com/jetty-project/jetty-reactive-httpclient</url>
@@ -113,6 +113,16 @@
         </executions>
       </plugin>
       <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Bundle-SymbolicName>${project.groupId}.reactive.client</Bundle-SymbolicName>
+          </instructions>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
         <executions>
@@ -178,6 +188,11 @@
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
           <version>2.21.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <version>3.5.0</version>
         </plugin>
         <plugin>
           <groupId>org.jacoco</groupId>
