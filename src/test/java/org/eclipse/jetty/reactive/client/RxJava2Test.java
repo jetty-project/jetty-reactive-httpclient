@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeUnit;import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -358,6 +358,20 @@ public class RxJava2Test extends AbstractTest {
 
         Assert.assertEquals(result, data2);
     }
+    
+
+    @Test(expectedExceptions={RuntimeException.class})
+    public void connectionRefusedError() throws Exception {
+        prepare(new EmptyHandler());
+        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient().newRequest("http://localhost:1")).build();
+        Single.fromPublisher(request.response(ReactiveResponse.Content.discard()))
+			        .map(ReactiveResponse::getStatus)
+			        .timeout(1000, TimeUnit.MILLISECONDS,Single.just(-1))
+			        .doOnError(e->e.printStackTrace())
+			        .blockingGet();
+        Assert.fail("Timed out, should have thown an exception");
+    }
+
 
     public static class Pair<X, Y> {
         public final X _1;
