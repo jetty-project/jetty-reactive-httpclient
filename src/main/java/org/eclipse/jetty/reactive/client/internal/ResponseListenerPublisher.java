@@ -94,6 +94,7 @@ public class ResponseListenerPublisher<T> extends AbstractSingleProcessor<T, T> 
         if (logger.isDebugEnabled()) {
             logger.debug("response failure " + response, failure);
         }
+        super.onFailure(this, failure);
     }
 
     @Override
