@@ -31,12 +31,11 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstractSinglePublisher<T> implements Publisher<T>, Subscription {
     protected static long cappedAdd(long x, long y) {
-        long r = x + y;
-        // Overflow ?
-        if (((x ^ r) & (y ^ r)) < 0) {
+        try {
+            return Math.addExact(x, y);
+        } catch (ArithmeticException e) {
             return Long.MAX_VALUE;
         }
-        return r;
     }
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -45,7 +44,7 @@ public abstract class AbstractSinglePublisher<T> implements Publisher<T>, Subscr
 
     @Override
     public void subscribe(Subscriber<? super T> subscriber) {
-        subscriber = Objects.requireNonNull(subscriber, "invalid 'null' subscriber");
+        Objects.requireNonNull(subscriber, "invalid 'null' subscriber");
         Throwable failure = null;
         synchronized (this) {
             if (this.subscriber != null) {

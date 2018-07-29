@@ -75,7 +75,7 @@ public abstract class AbstractSingleProcessor<I, O> extends AbstractSinglePublis
 
     @Override
     public void onSubscribe(Subscription subscription) {
-        subscription = Objects.requireNonNull(subscription, "invalid 'null' subscription");
+        Objects.requireNonNull(subscription, "invalid 'null' subscription");
         long demand = 0;
         boolean cancel = false;
         synchronized (this) {
