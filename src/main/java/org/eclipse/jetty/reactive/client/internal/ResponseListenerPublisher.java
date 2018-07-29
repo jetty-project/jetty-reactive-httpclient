@@ -99,9 +99,14 @@ public class ResponseListenerPublisher<T> extends AbstractSingleProcessor<T, T> 
     @Override
     public void onComplete(Result result) {
         if (result.isSucceeded()) {
-            content.complete();
+            if (!content.complete()) {
+                onComplete();
+            }
         } else {
-            content.fail(result.getFailure());
+            Throwable failure = result.getFailure();
+            if (!content.fail(failure)) {
+                onError(failure);
+            }
         }
     }
 

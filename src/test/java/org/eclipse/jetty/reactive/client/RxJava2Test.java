@@ -17,6 +17,7 @@ package org.eclipse.jetty.reactive.client;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -357,6 +358,91 @@ public class RxJava2Test extends AbstractTest {
         String result = Single.fromPublisher(sender1).blockingGet();
 
         Assert.assertEquals(result, data2);
+    }
+
+    @Test
+    public void testFlowableTimeout() throws Exception {
+        long timeout = 500;
+        prepare(new EmptyHandler() {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
+                try {
+                    Thread.sleep(timeout * 2);
+                } catch (InterruptedException e) {
+                    throw new InterruptedIOException();
+                }
+            }
+        });
+
+        CountDownLatch latch = new CountDownLatch(1);
+        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient().newRequest(uri())).build();
+        Single.fromPublisher(request.response(ReactiveResponse.Content.discard()))
+                .map(ReactiveResponse::getStatus)
+                .timeout(timeout, TimeUnit.MILLISECONDS)
+                .subscribe((status, failure) -> {
+                    if (failure != null) {
+                        latch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(latch.await(timeout * 2, TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    public void testConnectTimeout() throws Exception {
+        prepare(new EmptyHandler());
+        String uri = uri();
+        server.stop();
+
+        long connectTimeout = 500;
+        httpClient().setConnectTimeout(connectTimeout);
+        CountDownLatch latch = new CountDownLatch(1);
+        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient().newRequest(uri)).build();
+        Single.fromPublisher(request.response(ReactiveResponse.Content.discard()))
+                .map(ReactiveResponse::getStatus)
+                .subscribe((status, failure) -> {
+                    if (failure != null) {
+                        latch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(latch.await(connectTimeout * 2, TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    public void testResponseContentTimeout() throws Exception {
+        long timeout = 500;
+        byte[] data = "hello".getBytes(StandardCharsets.UTF_8);
+        prepare(new EmptyHandler() {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
+                try {
+                    response.setContentLength(data.length);
+                    response.flushBuffer();
+                    Thread.sleep(timeout * 2);
+                    response.getOutputStream().write(data);
+                } catch (InterruptedException e) {
+                    throw new InterruptedIOException();
+                }
+            }
+        });
+
+        CountDownLatch latch = new CountDownLatch(1);
+        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient().newRequest(uri()).timeout(timeout, TimeUnit.MILLISECONDS)).build();
+        Single.fromPublisher(request.response((response, content) -> {
+            int status = response.getStatus();
+            if (status != HttpStatus.OK_200) {
+                return Flowable.error(new IOException(String.valueOf(status)));
+            } else {
+                return ReactiveResponse.Content.asString().apply(response, content);
+            }
+        })).subscribe((status, failure) -> {
+            if (failure != null) {
+                latch.countDown();
+            }
+        });
+
+        Assert.assertTrue(latch.await(timeout * 2, TimeUnit.MILLISECONDS));
     }
 
     public static class Pair<X, Y> {

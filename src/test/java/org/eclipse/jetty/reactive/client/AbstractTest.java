@@ -46,7 +46,7 @@ public class AbstractTest {
     private final HttpConfiguration httpConfiguration = new HttpConfiguration();
     private final String protocol;
     private HttpClient httpClient;
-    private Server server;
+    protected Server server;
     private ServerConnector connector;
 
     public AbstractTest(String protocol) {

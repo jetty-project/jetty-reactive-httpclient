@@ -37,15 +37,15 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
         process(item);
     }
 
-    public void complete() {
+    public boolean complete() {
         if (logger.isDebugEnabled()) {
             logger.debug("completed {}", this);
         }
-        process(COMPLETE);
+        return process(COMPLETE);
     }
 
-    public void fail(Throwable failure) {
-        process(new Failure(failure));
+    public boolean fail(Throwable failure) {
+        return process(new Failure(failure));
     }
 
     @Override
@@ -63,7 +63,7 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
         }
     }
 
-    private void process(Object item) {
+    private boolean process(Object item) {
         Subscriber<? super T> subscriber;
         synchronized (this) {
             items.offer(item);
@@ -77,6 +77,9 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
         }
         if (subscriber != null) {
             proceed(subscriber);
+            return true;
+        } else {
+            return false;
         }
     }
 
