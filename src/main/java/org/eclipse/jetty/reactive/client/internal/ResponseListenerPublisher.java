@@ -68,6 +68,7 @@ public class ResponseListenerPublisher<T> extends AbstractSingleProcessor<T, T> 
         }
         Publisher<T> publisher = contentFn.apply(request.getReactiveResponse(), content);
         publisher.subscribe(this);
+        content.start();
     }
 
     @Override

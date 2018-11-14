@@ -29,6 +29,18 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
     private final Queue<Object> items = new ArrayDeque<>();
     private long demand;
     private boolean stalled = true;
+    private boolean started = false;
+
+    public void start(){
+        Subscriber<? super T> subscriber;
+        synchronized (this) {
+            started = true;
+            subscriber = subscriber();
+        }
+        if (subscriber != null) {
+            proceed(subscriber);
+        }
+    }
 
     public void offer(T item) {
         if (logger.isDebugEnabled()) {
@@ -67,11 +79,15 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
         Subscriber<? super T> subscriber;
         synchronized (this) {
             items.offer(item);
-            subscriber = subscriber();
-            if (subscriber != null) {
-                if (stalled) {
-                    stalled = false;
+            if(started) {
+                subscriber = subscriber();
+                if (subscriber != null) {
+                    if (stalled) {
+                        stalled = false;
+                    }
                 }
+            } else {
+                subscriber = null;
             }
 
         }
