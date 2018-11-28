@@ -73,7 +73,6 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
                     stalled = false;
                 }
             }
-
         }
         if (subscriber != null) {
             proceed(subscriber);
