@@ -118,6 +118,9 @@ public class ReactiveRequest {
      * <p>Creates a Publisher that sends the request when a Subscriber requests the response
      * via {@link Subscription#request(long)}, processing the response content with the given
      * function.</p>
+     * <p>Applications must subscribe (possibly asynchronously) to the response content Publisher,
+     * even if it is known that the response has no content, to receive the response success/failure
+     * events.</p>
      *
      * @param contentFn the function that processes the response content
      * @param <T> the element type of the processed response content

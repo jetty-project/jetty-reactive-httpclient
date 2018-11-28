@@ -46,6 +46,7 @@ public class ResponseListenerPublisher<T> extends AbstractSingleProcessor<T, T> 
     private final ReactiveRequest request;
     private final BiFunction<ReactiveResponse, Publisher<ContentChunk>, Publisher<T>> contentFn;
     private boolean requestSent;
+    private boolean responseReceived;
 
     public ResponseListenerPublisher(ReactiveRequest request, BiFunction<ReactiveResponse, Publisher<ContentChunk>, Publisher<T>> contentFn) {
         this.request = request;
@@ -66,6 +67,7 @@ public class ResponseListenerPublisher<T> extends AbstractSingleProcessor<T, T> 
         if (logger.isDebugEnabled()) {
             logger.debug("received response headers {}", response);
         }
+        responseReceived = true;
         Publisher<T> publisher = contentFn.apply(request.getReactiveResponse(), content);
         publisher.subscribe(this);
     }
@@ -99,13 +101,13 @@ public class ResponseListenerPublisher<T> extends AbstractSingleProcessor<T, T> 
     @Override
     public void onComplete(Result result) {
         if (result.isSucceeded()) {
-            if (!content.complete()) {
-                onComplete();
-            }
+            content.complete();
         } else {
             Throwable failure = result.getFailure();
             if (!content.fail(failure)) {
-                onError(failure);
+                if (!responseReceived) {
+                    onError(failure);
+                }
             }
         }
     }

@@ -389,6 +389,28 @@ public class RxJava2Test extends AbstractTest {
     }
 
     @Test
+    public void testDelayedContentSubscriptionWithoutResponseContent() throws Exception {
+        prepare(new EmptyHandler());
+
+        long delay = 1000;
+        CountDownLatch latch = new CountDownLatch(1);
+        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient().newRequest(uri())).build();
+        Single.fromPublisher(request.response((response, content) ->
+                // Subscribe to the content after a delay,
+                // discard the content and emit the response.
+                Flowable.fromPublisher(content)
+                        .doOnNext(chunk -> chunk.callback.succeeded())
+                        .filter(chunk -> false)
+                        .isEmpty()
+                        .map(empty -> response)
+                        .delaySubscription(delay, TimeUnit.MILLISECONDS)
+                        .toFlowable()))
+                .subscribe(response -> latch.countDown());
+
+        Assert.assertTrue(latch.await(delay * 2, TimeUnit.MILLISECONDS));
+    }
+
+    @Test
     public void testConnectTimeout() throws Exception {
         prepare(new EmptyHandler());
         String uri = uri();
