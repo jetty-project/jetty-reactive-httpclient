@@ -15,6 +15,7 @@
  */
 package org.eclipse.jetty.reactive.client.internal;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -26,9 +27,15 @@ import io.reactivex.Flowable;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 public class SingleProcessorTest {
+    @BeforeMethod
+    public void printTestName(Method method) {
+        System.err.printf("Running %s.%s()%n", getClass().getName(), method.getName());
+    }
+
     @Test
     public void testDemandWithoutUpStreamIsRemembered() throws Exception {
         AbstractSingleProcessor<String, String> processor = new AbstractSingleProcessor<String, String>() {

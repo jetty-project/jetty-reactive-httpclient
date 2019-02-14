@@ -17,6 +17,7 @@ package org.eclipse.jetty.reactive.client.internal;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
+import java.util.concurrent.CompletionException;
 
 import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
@@ -29,6 +30,8 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
     private final Queue<Object> items = new ArrayDeque<>();
     private long demand;
     private boolean stalled = true;
+    private boolean active;
+    private Throwable terminated;
 
     public void offer(T item) {
         if (logger.isDebugEnabled()) {
@@ -37,14 +40,17 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
         process(item);
     }
 
-    public boolean complete() {
+    public void complete() {
         if (logger.isDebugEnabled()) {
             logger.debug("completed {}", this);
         }
-        return process(COMPLETE);
+        process(COMPLETE);
     }
 
     public boolean fail(Throwable failure) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("failed {}", this, failure);
+        }
         return process(new Failure(failure));
     }
 
@@ -66,6 +72,12 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
     private boolean process(Object item) {
         Subscriber<? super T> subscriber;
         synchronized (this) {
+            if (terminated != null) {
+                throw new IllegalStateException(terminated);
+            }
+            if (isTerminal(item)) {
+                terminated = new CompletionException("terminated from " + Thread.currentThread(), null);
+            }
             items.offer(item);
             subscriber = subscriber();
             if (subscriber != null) {
@@ -83,6 +95,13 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
     }
 
     private void proceed(Subscriber<? super T> subscriber) {
+        synchronized (this) {
+            if (active) {
+                return;
+            }
+            active = true;
+        }
+
         Object item;
         boolean terminal;
         while (true) {
@@ -90,14 +109,18 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
                 item = items.peek();
                 if (item == null) {
                     stalled = true;
+                    active = false;
                     return;
                 } else {
-                    if (demand > 0) {
-                        --demand;
-                        terminal = isTerminal(item);
-                    } else {
-                        stalled = true;
-                        return;
+                    terminal = isTerminal(item);
+                    if (!terminal) {
+                        if (demand > 0) {
+                            --demand;
+                        } else  {
+                            stalled = true;
+                            active = false;
+                            return;
+                        }
                     }
                 }
                 item = items.poll();
