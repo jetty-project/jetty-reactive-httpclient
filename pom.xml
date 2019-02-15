@@ -45,6 +45,31 @@
     </snapshotRepository>
   </distributionManagement>
 
+  <repositories>
+    <repository>
+      <id>jetty-staging</id>
+      <url>https://oss.sonatype.org/content/groups/jetty-with-staging</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+  <pluginRepositories>
+    <pluginRepository>
+      <id>jetty-staging</id>
+      <url>https://oss.sonatype.org/content/groups/jetty-with-staging</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </pluginRepository>
+  </pluginRepositories>
+
   <scm>
     <connection>scm:git:git://github.com/jetty-project/jetty-reactive-httpclient.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/jetty-project/jetty-reactive-httpclient.git</developerConnection>
@@ -59,7 +84,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jetty-version>9.4.14.v20181114</jetty-version>
+    <jetty-version>9.4.15.v20190215</jetty-version>
     <slf4j-version>1.7.25</slf4j-version>
     <log4j2-version>2.11.1</log4j2-version>
     <reactivestreams-version>1.0.2</reactivestreams-version>
