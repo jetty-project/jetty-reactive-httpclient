@@ -60,9 +60,10 @@ public abstract class AbstractSinglePublisher<T> implements Publisher<T>, Subscr
         if (logger.isDebugEnabled()) {
             logger.debug("{} subscription from {}", this, subscriber);
         }
-        subscriber.onSubscribe(this);
         if (failure != null) {
             onFailure(subscriber, failure);
+        } else {
+            subscriber.onSubscribe(this);
         }
     }
 
