@@ -15,6 +15,7 @@
  */
 package org.eclipse.jetty.reactive.client.internal;
 
+import org.eclipse.jetty.util.MathUtils;
 import org.reactivestreams.Subscriber;
 
 public abstract class AbstractEventPublisher<T> extends AbstractSinglePublisher<T> {
@@ -28,7 +29,7 @@ public abstract class AbstractEventPublisher<T> extends AbstractSinglePublisher<
         boolean notify = false;
         Throwable failure = null;
         synchronized (this) {
-            demand = cappedAdd(demand, n);
+            demand = MathUtils.cappedAdd(demand, n);
             boolean isInitial = initial;
             initial = false;
             if (isInitial && terminated) {

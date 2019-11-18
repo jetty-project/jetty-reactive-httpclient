@@ -17,6 +17,7 @@ package org.eclipse.jetty.reactive.client.internal;
 
 import java.util.Objects;
 
+import org.eclipse.jetty.util.MathUtils;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -56,7 +57,7 @@ public abstract class AbstractSingleProcessor<I, O> extends AbstractSinglePublis
         long demand;
         Subscription upStream;
         synchronized (this) {
-            demand = cappedAdd(this.demand, n);
+            demand = MathUtils.cappedAdd(this.demand, n);
             upStream = upStream();
             this.demand = upStream == null ? demand : 0;
         }

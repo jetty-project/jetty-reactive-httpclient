@@ -19,6 +19,7 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.CompletionException;
 
+import org.eclipse.jetty.util.MathUtils;
 import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +59,7 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
     protected void onRequest(Subscriber<? super T> subscriber, long n) {
         boolean proceed = false;
         synchronized (this) {
-            demand = cappedAdd(demand, n);
+            demand = MathUtils.cappedAdd(demand, n);
             if (stalled) {
                 stalled = false;
                 proceed = true;

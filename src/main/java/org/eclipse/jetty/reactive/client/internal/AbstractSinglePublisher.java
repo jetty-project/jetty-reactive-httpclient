@@ -30,13 +30,6 @@ import org.slf4j.LoggerFactory;
  * @param <T> the type of items emitted by this Publisher
  */
 public abstract class AbstractSinglePublisher<T> implements Publisher<T>, Subscription {
-    protected static long cappedAdd(long x, long y) {
-        try {
-            return Math.addExact(x, y);
-        } catch (ArithmeticException e) {
-            return Long.MAX_VALUE;
-        }
-    }
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private Subscriber<? super T> subscriber;
