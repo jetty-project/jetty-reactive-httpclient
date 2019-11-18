@@ -81,7 +81,7 @@ public class ReactiveRequest {
                 })
                 .onResponseBegin(responseEvents)
                 .onResponseHeaders(responseEvents)
-                .onResponseContentAsync(responseEvents)
+                .onResponseContentDemanded(responseEvents)
                 .onResponseSuccess(responseEvents)
                 .onResponseFailure(responseEvents)
                 .onComplete(responseEvents);

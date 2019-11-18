@@ -16,7 +16,10 @@
 package org.eclipse.jetty.reactive.client.internal;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
+import java.util.function.LongConsumer;
 
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
@@ -26,6 +29,7 @@ import org.eclipse.jetty.reactive.client.ReactiveRequest;
 import org.eclipse.jetty.reactive.client.ReactiveResponse;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.MathUtils;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
@@ -41,8 +45,9 @@ import org.slf4j.LoggerFactory;
  * of this Publisher.
  */
 public class ResponseListenerPublisher<T> extends AbstractSingleProcessor<T, T> implements Response.Listener {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final QueuedSinglePublisher<ContentChunk> content = new QueuedSinglePublisher<>();
+    private static final Logger logger = LoggerFactory.getLogger(ResponseListenerPublisher.class);
+
+    private final ContentPublisher content = new ContentPublisher();
     private final ReactiveRequest request;
     private final BiFunction<ReactiveResponse, Publisher<ContentChunk>, Publisher<T>> contentFn;
     private boolean requestSent;
@@ -65,7 +70,7 @@ public class ResponseListenerPublisher<T> extends AbstractSingleProcessor<T, T> 
     @Override
     public void onHeaders(Response response) {
         if (logger.isDebugEnabled()) {
-            logger.debug("received response headers {}", response);
+            logger.debug("received response headers {} on {}", response, this);
         }
         responseReceived = true;
         Publisher<T> publisher = contentFn.apply(request.getReactiveResponse(), content);
@@ -73,11 +78,8 @@ public class ResponseListenerPublisher<T> extends AbstractSingleProcessor<T, T> 
     }
 
     @Override
-    public void onContent(Response response, ByteBuffer buffer, Callback callback) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("received response chunk {} {}", response, BufferUtil.toSummaryString(buffer));
-        }
-        content.offer(new ContentChunk(buffer, callback));
+    public void onBeforeContent(Response response, LongConsumer demand) {
+        content.accept(demand);
     }
 
     @Override
@@ -85,16 +87,28 @@ public class ResponseListenerPublisher<T> extends AbstractSingleProcessor<T, T> 
     }
 
     @Override
+    public void onContent(Response response, ByteBuffer buffer, Callback callback) {
+    }
+
+    @Override
+    public void onContent(Response response, LongConsumer demand, ByteBuffer buffer, Callback callback) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("received response chunk {} {} on {}", response, BufferUtil.toSummaryString(buffer), this);
+        }
+        content.offer(demand, new ContentChunk(buffer, callback));
+    }
+
+    @Override
     public void onSuccess(Response response) {
         if (logger.isDebugEnabled()) {
-            logger.debug("response complete {}", response);
+            logger.debug("response complete {} on {}", response, this);
         }
     }
 
     @Override
     public void onFailure(Response response, Throwable failure) {
         if (logger.isDebugEnabled()) {
-            logger.debug("response failure " + response, failure);
+            logger.debug("response failure {} on {}", response, this, failure);
         }
     }
 
@@ -132,7 +146,7 @@ public class ResponseListenerPublisher<T> extends AbstractSingleProcessor<T, T> 
 
     private void send() {
         if (logger.isDebugEnabled()) {
-            logger.debug("sending request {}", request);
+            logger.debug("sending request {} from {}", request, this);
         }
         request.getRequest().send(this);
     }
@@ -140,5 +154,49 @@ public class ResponseListenerPublisher<T> extends AbstractSingleProcessor<T, T> 
     @Override
     public String toString() {
         return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), request);
+    }
+
+    private static class ContentPublisher extends QueuedSinglePublisher<ContentChunk> {
+        private final Map<ContentChunk, LongConsumer> chunks = new ConcurrentHashMap<>();
+        private long initialDemand;
+        private LongConsumer upstreamDemand;
+
+        public void offer(LongConsumer demand, ContentChunk chunk) {
+            chunks.put(chunk, demand);
+            super.offer(chunk);
+        }
+
+        private void accept(LongConsumer consumer) {
+            long demand;
+            synchronized (this) {
+                upstreamDemand = consumer;
+                demand = initialDemand;
+                initialDemand = 0;
+            }
+            consumer.accept(demand);
+        }
+
+        @Override
+        protected void onRequest(Subscriber<? super ContentChunk> subscriber, long n) {
+            super.onRequest(subscriber, n);
+            LongConsumer demand;
+            synchronized (this) {
+                demand = upstreamDemand;
+                if (demand == null) {
+                    initialDemand = MathUtils.cappedAdd(initialDemand, n);
+                }
+            }
+            if (demand != null) {
+                demand.accept(n);
+            }
+        }
+
+        @Override
+        protected void onNext(Subscriber<? super ContentChunk> subscriber, ContentChunk item) {
+            synchronized (this) {
+                upstreamDemand = chunks.remove(item);
+            }
+            super.onNext(subscriber, item);
+        }
     }
 }

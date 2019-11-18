@@ -27,9 +27,12 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -38,11 +41,13 @@ import io.reactivex.Flowable;
 import io.reactivex.Single;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.reactive.client.internal.AbstractSingleProcessor;
 import org.eclipse.jetty.reactive.client.internal.BufferingProcessor;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -467,6 +472,98 @@ public class RxJava2Test extends AbstractTest {
         Assert.assertTrue(latch.await(timeout * 2, TimeUnit.MILLISECONDS));
     }
 
+    @Test
+    public void testBufferedResponseContent() throws Exception {
+        Random random = new Random();
+        byte[] content1 = new byte[1024];
+        random.nextBytes(content1);
+        byte[] content2 = new byte[2048];
+        random.nextBytes(content2);
+        byte[] original = new byte[content1.length + content2.length];
+        System.arraycopy(content1, 0, original, 0, content1.length);
+        System.arraycopy(content2, 0, original, content1.length, content2.length);
+
+        prepare(new EmptyHandler() {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+                try {
+                    response.setContentLength(original.length);
+                    ServletOutputStream output = response.getOutputStream();
+                    output.write(content1);
+                    output.flush();
+                    Thread.sleep(500);
+                    output.write(content2);
+                } catch (InterruptedException e) {
+                    throw new InterruptedIOException();
+                }
+            }
+        });
+
+        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient().newRequest(uri())).build();
+
+        // RxJava2 API always call request(Long.MAX_VALUE),
+        // but I want to control backpressure explicitly,
+        // so below the RxJava2 APIs are not used (much).
+
+        Publisher<BufferedResponse> bufRespPub = request.response((response, content) -> {
+            BufferedResponse result = new BufferedResponse(response);
+            if (response.getStatus() == HttpStatus.OK_200) {
+                Processor<ContentChunk, BufferedResponse> processor = new AbstractSingleProcessor<ContentChunk, BufferedResponse>() {
+                    @Override
+                    public void onNext(ContentChunk chunk) {
+                        // Accumulate the chunks, without consuming
+                        // the buffers nor completing the callbacks.
+                        result.chunks.add(chunk);
+                        upStreamRequest(1);
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        downStreamOnNext(result);
+                        super.onComplete();
+                    }
+                };
+                content.subscribe(processor);
+                return processor;
+            } else {
+                return Flowable.just(result);
+            }
+        });
+
+        AtomicReference<BufferedResponse> ref = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        bufRespPub.subscribe(new Subscriber<BufferedResponse>() {
+            @Override
+            public void onSubscribe(Subscription subscription) {
+                subscription.request(1);
+            }
+
+            @Override
+            public void onNext(BufferedResponse bufferedResponse) {
+                ref.set(bufferedResponse);
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+            }
+
+            @Override
+            public void onComplete() {
+                latch.countDown();
+            }
+        });
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        BufferedResponse bufferedResponse = ref.get();
+        Assert.assertEquals(bufferedResponse.response.getStatus(), HttpStatus.OK_200);
+        ByteBuffer content = ByteBuffer.allocate(content1.length + content2.length);
+        bufferedResponse.chunks.forEach(chunk -> {
+            content.put(chunk.buffer);
+            chunk.callback.succeeded();
+        });
+        Assert.assertEquals(content.flip(), ByteBuffer.wrap(original));
+    }
+
     public static class Pair<X, Y> {
         public final X _1;
         public final Y _2;
@@ -476,4 +573,14 @@ public class RxJava2Test extends AbstractTest {
             _2 = y;
         }
     }
+
+    public static class BufferedResponse {
+        private final List<ContentChunk> chunks = new ArrayList<>();
+        private final ReactiveResponse response;
+
+        public BufferedResponse(ReactiveResponse response) {
+            this.response = response;
+        }
+    }
+
 }

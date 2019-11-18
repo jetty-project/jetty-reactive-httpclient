@@ -16,6 +16,7 @@
 package org.eclipse.jetty.reactive.client.internal;
 
 import java.nio.ByteBuffer;
+import java.util.function.LongConsumer;
 
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
@@ -47,13 +48,18 @@ public class ResponseEventPublisher extends AbstractEventPublisher<ReactiveRespo
     }
 
     @Override
-    public void onContent(Response response, ByteBuffer content, Callback callback) {
-        emit(new ReactiveResponse.Event(ReactiveResponse.Event.Type.CONTENT, request.getReactiveResponse(), content));
-        callback.succeeded();
+    public void onContent(Response response, ByteBuffer content) {
     }
 
     @Override
-    public void onContent(Response response, ByteBuffer content) {
+    public void onContent(Response response, ByteBuffer content, Callback callback) {
+    }
+
+    @Override
+    public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback) {
+        emit(new ReactiveResponse.Event(ReactiveResponse.Event.Type.CONTENT, request.getReactiveResponse(), content));
+        callback.succeeded();
+        demand.accept(1);
     }
 
     @Override
