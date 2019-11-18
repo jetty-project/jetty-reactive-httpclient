@@ -57,7 +57,7 @@ public class RxJava2Test extends AbstractTest {
     }
 
     @Test
-    public void simpleUsage() throws Exception {
+    public void testSimpleUsage() throws Exception {
         prepare(new EmptyHandler());
 
         ReactiveRequest request = ReactiveRequest.newBuilder(httpClient().newRequest(uri())).build();
@@ -69,7 +69,7 @@ public class RxJava2Test extends AbstractTest {
     }
 
     @Test
-    public void requestEvents() throws Exception {
+    public void testRequestEvents() throws Exception {
         prepare(new EmptyHandler());
 
         ReactiveRequest request = ReactiveRequest.newBuilder(httpClient(), uri()).build();
@@ -122,7 +122,7 @@ public class RxJava2Test extends AbstractTest {
     }
 
     @Test
-    public void responseEvents() throws Exception {
+    public void testResponseEvents() throws Exception {
         prepare(new EmptyHandler() {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -180,7 +180,7 @@ public class RxJava2Test extends AbstractTest {
     }
 
     @Test
-    public void requestBody() throws Exception {
+    public void testRequestBody() throws Exception {
         prepare(new EmptyHandler() {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -201,7 +201,7 @@ public class RxJava2Test extends AbstractTest {
     }
 
     @Test
-    public void flowableRequestBody() throws Exception {
+    public void testFlowableRequestBody() throws Exception {
         prepare(new EmptyHandler() {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -255,7 +255,7 @@ public class RxJava2Test extends AbstractTest {
     }
 
     @Test
-    public void responseBody() throws Exception {
+    public void testResponseBody() throws Exception {
         Charset charset = StandardCharsets.UTF_16;
         String data = "\u20ac";
         prepare(new EmptyHandler() {
@@ -274,7 +274,7 @@ public class RxJava2Test extends AbstractTest {
     }
 
     @Test
-    public void flowableResponseBody() throws Exception {
+    public void testFlowableResponseBody() throws Exception {
         byte[] data = new byte[1024];
         new Random().nextBytes(data);
         prepare(new EmptyHandler() {
@@ -306,7 +306,7 @@ public class RxJava2Test extends AbstractTest {
     }
 
     @Test
-    public void flowableResponseThenBody() throws Exception {
+    public void testFlowableResponseThenBody() throws Exception {
         String pangram = "quizzical twins proved my hijack bug fix";
         prepare(new EmptyHandler() {
             @Override
@@ -331,7 +331,7 @@ public class RxJava2Test extends AbstractTest {
     }
 
     @Test
-    public void flowableResponsePipedToRequest() throws Exception {
+    public void testFlowableResponsePipedToRequest() throws Exception {
         String data1 = "data1";
         String data2 = "data2";
         prepare(new EmptyHandler() {
@@ -399,11 +399,11 @@ public class RxJava2Test extends AbstractTest {
                 // Subscribe to the content after a delay,
                 // discard the content and emit the response.
                 Flowable.fromPublisher(content)
+                        .delaySubscription(delay, TimeUnit.MILLISECONDS)
                         .doOnNext(chunk -> chunk.callback.succeeded())
                         .filter(chunk -> false)
                         .isEmpty()
                         .map(empty -> response)
-                        .delaySubscription(delay, TimeUnit.MILLISECONDS)
                         .toFlowable()))
                 .subscribe(response -> latch.countDown());
 

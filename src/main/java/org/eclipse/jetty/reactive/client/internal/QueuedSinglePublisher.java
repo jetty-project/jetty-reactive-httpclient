@@ -26,8 +26,8 @@ import org.slf4j.LoggerFactory;
 
 public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
     public static final Terminal COMPLETE = Subscriber::onComplete;
+    private static final Logger logger = LoggerFactory.getLogger(QueuedSinglePublisher.class);
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Queue<Object> items = new ArrayDeque<>();
     private long demand;
     private boolean stalled = true;
@@ -138,9 +138,13 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
             } else {
                 @SuppressWarnings("unchecked")
                 T t = (T)item;
-                subscriber.onNext(t);
+                onNext(subscriber, t);
             }
         }
+    }
+
+    protected void onNext(Subscriber<? super T> subscriber, T item) {
+        subscriber.onNext(item);
     }
 
     private boolean isTerminal(Object item) {
@@ -152,7 +156,7 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
         public void notify(Subscriber<? super T> subscriber);
     }
 
-    private class Failure<F> implements Terminal<F> {
+    private static class Failure<F> implements Terminal<F> {
         private final Throwable failure;
 
         private Failure(Throwable failure) {

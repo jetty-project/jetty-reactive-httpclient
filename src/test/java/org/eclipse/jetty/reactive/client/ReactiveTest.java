@@ -34,7 +34,7 @@ public class ReactiveTest extends AbstractTest {
     }
 
     @Test
-    public void simpleReactiveUsage() throws Exception {
+    public void testSimpleReactiveUsage() throws Exception {
         prepare(new EmptyHandler());
 
         Publisher<ReactiveResponse> publisher = ReactiveRequest.newBuilder(httpClient(), uri()).build().response();

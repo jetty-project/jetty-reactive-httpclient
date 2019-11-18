@@ -30,8 +30,8 @@ import org.slf4j.LoggerFactory;
  * @param <T> the type of items emitted by this Publisher
  */
 public abstract class AbstractSinglePublisher<T> implements Publisher<T>, Subscription {
+    private static final Logger logger = LoggerFactory.getLogger(AbstractSinglePublisher.class);
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
     private Subscriber<? super T> subscriber;
     private boolean cancelled;
 
