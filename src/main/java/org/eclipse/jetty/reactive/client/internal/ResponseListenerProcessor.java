@@ -36,16 +36,30 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A Publisher that listens for response events.
- * When this Publisher is demanded data, it first sends the request and produces no data.
- * When the response arrives, the application is invoked and an application Publisher is
- * returned to this implementation.
- * Any further data demand to this Publisher is forwarded to the application Publisher.
- * In turn, the application Publisher produces data that is forwarded to the subscriber
- * of this Publisher.
+ * <p>A Processor that listens for response events.</p>
+ * <p>When this Processor is demanded data, it first sends the request and produces no data.
+ * When the response arrives, the application is invoked with a Publisher that produces
+ * response content chunks.</p>
+ * <p>The application <em>processes</em> the response content chunks into some other data
+ * structure (for example, splits them further, or coalesce them into a single chunk) and
+ * returns the application Processor to this implementation, which then builds this chain:</p>
+ * <pre>
+ * HTTP response content chunks Publisher - (produces ContentChunks)
+ *   Application Processor                - (processes ContentChunks and produces Ts)
+ *     ResponseListenerProcessor          - (forwards Ts to application)
+ *       Application Subscriber           - (consumes Ts)
+ * </pre>
+ * <p>Data flows from top to bottom, demand from bottom to top.</p>
+ * <p>ResponseListenerProcessor acts as a "hot" publisher: it is returned to the application
+ * <em>before</em> the response content arrives so that the application can subscribe to it.</p>
+ * <p>Any further data demand to this Processor is forwarded to the Application Processor,
+ * which in turn demands response content chunks.
+ * Response content chunks arrive to the Application Processor, which processes them and
+ * produces data that is forwarded to this Processor, which forwards it to the Application
+ * Subscriber.</p>
  */
-public class ResponseListenerPublisher<T> extends AbstractSingleProcessor<T, T> implements Response.Listener {
-    private static final Logger logger = LoggerFactory.getLogger(ResponseListenerPublisher.class);
+public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> implements Response.Listener {
+    private static final Logger logger = LoggerFactory.getLogger(ResponseListenerProcessor.class);
 
     private final ContentPublisher content = new ContentPublisher();
     private final ReactiveRequest request;
@@ -53,7 +67,7 @@ public class ResponseListenerPublisher<T> extends AbstractSingleProcessor<T, T> 
     private boolean requestSent;
     private boolean responseReceived;
 
-    public ResponseListenerPublisher(ReactiveRequest request, BiFunction<ReactiveResponse, Publisher<ContentChunk>, Publisher<T>> contentFn) {
+    public ResponseListenerProcessor(ReactiveRequest request, BiFunction<ReactiveResponse, Publisher<ContentChunk>, Publisher<T>> contentFn) {
         this.request = request;
         this.contentFn = contentFn;
     }

@@ -25,7 +25,7 @@ import org.eclipse.jetty.reactive.client.internal.PublisherContent;
 import org.eclipse.jetty.reactive.client.internal.PublisherContentProvider;
 import org.eclipse.jetty.reactive.client.internal.RequestEventPublisher;
 import org.eclipse.jetty.reactive.client.internal.ResponseEventPublisher;
-import org.eclipse.jetty.reactive.client.internal.ResponseListenerPublisher;
+import org.eclipse.jetty.reactive.client.internal.ResponseListenerProcessor;
 import org.eclipse.jetty.reactive.client.internal.StringContent;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -127,7 +127,7 @@ public class ReactiveRequest {
      * @return a Publisher for the processed content
      */
     public <T> Publisher<T> response(BiFunction<ReactiveResponse, Publisher<ContentChunk>, Publisher<T>> contentFn) {
-        return new ResponseListenerPublisher<>(this, contentFn);
+        return new ResponseListenerProcessor<>(this, contentFn);
     }
 
     /**

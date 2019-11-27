@@ -21,6 +21,9 @@ import org.eclipse.jetty.reactive.client.ContentChunk;
 import org.eclipse.jetty.reactive.client.ReactiveRequest;
 import org.reactivestreams.Publisher;
 
+/**
+ * A {@link ReactiveRequest.Content} that wraps a Publisher.
+ */
 public class PublisherContent extends AbstractSingleProcessor<ContentChunk, ContentChunk> implements ReactiveRequest.Content {
     private final String contentType;
 
