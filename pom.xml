@@ -85,6 +85,8 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jetty-version>9.4.24.v20191120</jetty-version>
+    <rxjava-version>2.2.15</rxjava-version>
+    <spring-version>5.2.1.RELEASE</spring-version>
     <slf4j-version>1.7.28</slf4j-version>
     <log4j2-version>2.12.1</log4j2-version>
     <reactivestreams-version>1.0.3</reactivestreams-version>
@@ -305,13 +307,13 @@
     <dependency>
       <groupId>io.reactivex.rxjava2</groupId>
       <artifactId>rxjava</artifactId>
-      <version>2.2.13</version>
+      <version>${rxjava-version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-webflux</artifactId>
-      <version>5.2.0.RELEASE</version>
+      <version>${spring-version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
