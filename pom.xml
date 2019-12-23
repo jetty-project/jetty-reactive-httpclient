@@ -84,11 +84,11 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jetty-version>9.4.24.v20191120</jetty-version>
-    <rxjava-version>2.2.15</rxjava-version>
-    <spring-version>5.2.1.RELEASE</spring-version>
+    <jetty-version>9.4.25.v20191220</jetty-version>
+    <rxjava-version>2.2.16</rxjava-version>
+    <spring-version>5.2.2.RELEASE</spring-version>
     <slf4j-version>1.7.28</slf4j-version>
-    <log4j2-version>2.12.1</log4j2-version>
+    <log4j2-version>2.13.0</log4j2-version>
     <reactivestreams-version>1.0.3</reactivestreams-version>
   </properties>
 
@@ -183,19 +183,22 @@
         </plugin>
         <plugin>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>3.0.0-M2</version>
+          <version>3.0.0-M3</version>
         </plugin>
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.1.2</version>
+          <version>3.2.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.0.1</version>
+          <version>3.1.1</version>
+          <configuration>
+            <source>8</source>
+          </configuration>
         </plugin>
         <plugin>
           <artifactId>maven-release-plugin</artifactId>
-          <version>2.5.3</version>
+          <version>3.0.0-M1</version>
           <configuration>
             <goals>deploy</goals>
             <preparationGoals>clean install</preparationGoals>
@@ -210,11 +213,11 @@
         </plugin>
         <plugin>
           <artifactId>maven-source-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.2.1</version>
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.0.0-M3</version>
+          <version>3.0.0-M4</version>
         </plugin>
         <plugin>
           <groupId>org.apache.felix</groupId>
