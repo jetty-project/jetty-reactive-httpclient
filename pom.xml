@@ -84,9 +84,9 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jetty-version>9.4.25.v20191220</jetty-version>
-    <rxjava-version>2.2.16</rxjava-version>
-    <spring-version>5.2.2.RELEASE</spring-version>
+    <jetty-version>9.4.26.v20200117</jetty-version>
+    <rxjava-version>2.2.17</rxjava-version>
+    <spring-version>5.2.3.RELEASE</spring-version>
     <slf4j-version>1.7.28</slf4j-version>
     <log4j2-version>2.13.0</log4j2-version>
     <reactivestreams-version>1.0.3</reactivestreams-version>
@@ -174,6 +174,10 @@
     <pluginManagement>
       <plugins>
         <plugin>
+          <artifactId>maven-clean-plugin</artifactId>
+          <version>2.6.1</version>
+        </plugin>
+        <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>3.8.1</version>
           <configuration>
@@ -182,8 +186,20 @@
           </configuration>
         </plugin>
         <plugin>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>3.0.0-M1</version>
+        </plugin>
+        <plugin>
           <artifactId>maven-enforcer-plugin</artifactId>
           <version>3.0.0-M3</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-gpg-plugin</artifactId>
+          <version>1.6</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-install-plugin</artifactId>
+          <version>3.0.0-M1</version>
         </plugin>
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>
@@ -210,6 +226,10 @@
         <plugin>
           <artifactId>maven-resources-plugin</artifactId>
           <version>3.1.0</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-site-plugin</artifactId>
+          <version>3.8.2</version>
         </plugin>
         <plugin>
           <artifactId>maven-source-plugin</artifactId>
@@ -346,7 +366,7 @@
     <dependency>
       <groupId>org.testng</groupId>
       <artifactId>testng</artifactId>
-      <version>7.0.0</version>
+      <version>7.1.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
