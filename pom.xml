@@ -105,8 +105,11 @@
             <configuration>
               <rules>
                 <requireJavaVersion>
-                  <version>[1.8,)</version>
+                  <version>[8,)</version>
                 </requireJavaVersion>
+                <requireMavenVersion>
+                  <version>3.5.0</version>
+                </requireMavenVersion>
               </rules>
             </configuration>
           </execution>
@@ -262,7 +265,7 @@
     <profile>
       <id>jdk9</id>
       <activation>
-        <jdk>[1.9,)</jdk>
+        <jdk>[9,)</jdk>
       </activation>
       <build>
         <plugins>
