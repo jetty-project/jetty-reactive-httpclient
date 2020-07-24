@@ -23,6 +23,7 @@ import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -69,7 +70,10 @@ public class AbstractTest {
 
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
-        httpClient = new HttpClient(createClientTransport(protocol), null);
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setExecutor(clientThreads);
+        clientConnector.setSelectors(1);
+        httpClient = new HttpClient(createClientTransport(clientConnector, protocol));
         httpClient.setExecutor(clientThreads);
         httpClient.start();
     }
@@ -83,14 +87,12 @@ public class AbstractTest {
         }
     }
 
-    private HttpClientTransport createClientTransport(String protocol) {
+    private HttpClientTransport createClientTransport(ClientConnector clientConnector, String protocol) {
         switch (protocol) {
             case "h2c":
-                HTTP2Client http2Client = new HTTP2Client();
-                http2Client.setSelectors(1);
-                return new HttpClientTransportOverHTTP2(http2Client);
+                return new HttpClientTransportOverHTTP2(new HTTP2Client(clientConnector));
             default:
-                return new HttpClientTransportOverHTTP(1);
+                return new HttpClientTransportOverHTTP(clientConnector);
         }
     }
 
