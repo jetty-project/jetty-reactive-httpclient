@@ -84,9 +84,9 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jetty-version>9.4.30.v20200611</jetty-version>
+    <jetty-version>9.4.31.v20200723</jetty-version>
     <rxjava-version>2.2.19</rxjava-version>
-    <spring-version>5.2.6.RELEASE</spring-version>
+    <spring-version>5.2.8.RELEASE</spring-version>
     <slf4j-version>1.7.30</slf4j-version>
     <log4j2-version>2.13.3</log4j2-version>
     <reactivestreams-version>1.0.3</reactivestreams-version>
