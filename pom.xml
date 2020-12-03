@@ -84,11 +84,11 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jetty-version>9.4.31.v20200723</jetty-version>
-    <rxjava-version>2.2.19</rxjava-version>
-    <spring-version>5.2.8.RELEASE</spring-version>
+    <jetty-version>9.4.35.v20201120</jetty-version>
+    <rxjava-version>3.0.8</rxjava-version>
+    <spring-version>5.3.1</spring-version>
     <slf4j-version>1.7.30</slf4j-version>
-    <log4j2-version>2.13.3</log4j2-version>
+    <log4j2-version>2.14.0</log4j2-version>
     <reactivestreams-version>1.0.3</reactivestreams-version>
   </properties>
 
@@ -210,7 +210,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.2.0</version>
           <configuration>
             <source>8</source>
           </configuration>
@@ -228,11 +228,11 @@
         </plugin>
         <plugin>
           <artifactId>maven-resources-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.2.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-site-plugin</artifactId>
-          <version>3.8.2</version>
+          <version>3.9.1</version>
         </plugin>
         <plugin>
           <artifactId>maven-source-plugin</artifactId>
@@ -240,22 +240,22 @@
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.0.0-M4</version>
+          <version>3.0.0-M5</version>
         </plugin>
         <plugin>
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
-          <version>4.2.1</version>
+          <version>5.1.1</version>
         </plugin>
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.5</version>
+          <version>0.8.6</version>
         </plugin>
         <plugin>
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>
-          <version>3.0</version>
+          <version>4.0.rc2</version>
         </plugin>
       </plugins>
     </pluginManagement>

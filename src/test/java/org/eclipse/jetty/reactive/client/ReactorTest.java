@@ -20,7 +20,7 @@ import java.io.InterruptedIOException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Random;
-
+import java.util.concurrent.TimeoutException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -30,7 +30,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.testng.Assert;
 import org.testng.annotations.Factory;
 import org.testng.annotations.Test;
-import reactor.core.publisher.Mono;
 
 public class ReactorTest extends AbstractTest {
     @Factory(dataProvider = "protocols", dataProviderClass = AbstractTest.class)
@@ -83,7 +82,8 @@ public class ReactorTest extends AbstractTest {
                 .uri(new URI(uri()))
                 .retrieve()
                 .bodyToMono(String.class)
-                .timeout(Duration.ofMillis(timeout), Mono.just(timeoutResult))
+                .timeout(Duration.ofMillis(timeout))
+                .onErrorReturn(TimeoutException.class::isInstance, timeoutResult)
                 .block();
 
         Assert.assertEquals(timeoutResult, responseContent);

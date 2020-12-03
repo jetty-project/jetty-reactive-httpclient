@@ -17,6 +17,7 @@ package org.eclipse.jetty.reactive.client.internal;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.LongConsumer;
@@ -64,12 +65,14 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
     private final ContentPublisher content = new ContentPublisher();
     private final ReactiveRequest request;
     private final BiFunction<ReactiveResponse, Publisher<ContentChunk>, Publisher<T>> contentFn;
+    private final boolean abortOnCancel;
     private boolean requestSent;
     private boolean responseReceived;
 
-    public ResponseListenerProcessor(ReactiveRequest request, BiFunction<ReactiveResponse, Publisher<ContentChunk>, Publisher<T>> contentFn) {
+    public ResponseListenerProcessor(ReactiveRequest request, BiFunction<ReactiveResponse, Publisher<ContentChunk>, Publisher<T>> contentFn, boolean abortOnCancel) {
         this.request = request;
         this.contentFn = contentFn;
+        this.abortOnCancel = abortOnCancel;
     }
 
     @Override
@@ -163,6 +166,14 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
             logger.debug("sending request {} from {}", request, this);
         }
         request.getRequest().send(this);
+    }
+
+    @Override
+    public void cancel() {
+        if (abortOnCancel) {
+            request.getRequest().abort(new CancellationException());
+        }
+        super.cancel();
     }
 
     @Override
