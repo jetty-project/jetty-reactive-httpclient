@@ -6,9 +6,14 @@ A [ReactiveStreams](http://www.reactive-streams.org/) wrapper around
 [Jetty](https://eclipse.org/jetty)'s 
 [HttpClient](http://www.eclipse.org/jetty/documentation/current/http-client.html).
 
-### Usage
+## Versions
+`1.1.x` -> Java 8, Jetty 9.4.x  
+`2.0.x` -> Java 11, Jetty 10.0.x  
+`3.0.x` -> Java 11, Jetty 11.0.x  
 
-#### Plain ReactiveStreams Usage
+## Usage
+
+### Plain ReactiveStreams Usage
 
 ```java
 // Create and start Jetty's HttpClient.
@@ -47,7 +52,7 @@ publisher.subscribe(new Subscriber<ReactiveResponse>() {
 });
 ```
 
-#### RxJava 2 Usage
+### RxJava 2 Usage
 
 ```java
 // Create and start Jetty's HttpClient.
@@ -69,7 +74,7 @@ int status = Single.fromPublisher(publisher)
         .blockingGet();
 ```
 
-#### Response Content Processing
+### Response Content Processing
 
 The response content is processed by passing a `BiFunction` to `ReactiveRequest.response()`.
 
@@ -79,13 +84,13 @@ content processing.
 
 Built-in utility functions can be found in `ReactiveResponse.Content`.
 
-##### Example: discarding the response content
+#### Example: discarding the response content
 
 ```java
 Publisher<ReactiveResponse> response = request.response(ReactiveResponse.Content.discard());
 ```
 
-##### Example: converting the response content to a String
+#### Example: converting the response content to a String
 
 ```java
 Publisher<String> string = request.response(ReactiveResponse.Content.asString());
@@ -94,7 +99,7 @@ Publisher<String> string = request.response(ReactiveResponse.Content.asString())
 Alternatively, you can write your own processing `BiFunction` using any
 ReactiveStreams library, such as RxJava 2 (which provides class `Flowable`):
 
-##### Example: discarding non 200 OK response content
+#### Example: discarding non 200 OK response content
 
 ```java
 Publisher<ContentChunk> publisher = reactiveRequest.response((reactiveResponse, contentPublisher) -> {
@@ -128,7 +133,7 @@ Single<Long> contentLength = Flowable.fromPublisher(publisher)
         .reduce(0L, Long::sum);
 ```
 
-#### Providing Request Content
+### Providing Request Content
 
 Request content can be provided in a ReactiveStreams way, through the `ReactiveRequest.Content`
 class, which _is-a_ `Publisher` with the additional specification of the content length
@@ -166,7 +171,7 @@ ReactiveRequest request = ReactiveRequest.newBuilder(httpClient, "http://localho
         .build();
 ```
 
-#### Events
+### Events
 
 If you are interested in the request and/or response events that are emitted
 by the Jetty HttpClient APIs, you can obtain a `Publisher` for request and/or
