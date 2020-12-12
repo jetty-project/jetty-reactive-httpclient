@@ -22,7 +22,7 @@ import java.util.function.BiFunction;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.reactive.client.internal.PublisherContent;
-import org.eclipse.jetty.reactive.client.internal.PublisherContentProvider;
+import org.eclipse.jetty.reactive.client.internal.PublisherRequestContent;
 import org.eclipse.jetty.reactive.client.internal.RequestEventPublisher;
 import org.eclipse.jetty.reactive.client.internal.ResponseEventPublisher;
 import org.eclipse.jetty.reactive.client.internal.ResponseListenerProcessor;
@@ -70,9 +70,14 @@ public class ReactiveRequest {
     private final RequestEventPublisher requestEvents = new RequestEventPublisher(this);
     private final ResponseEventPublisher responseEvents = new ResponseEventPublisher(this);
     private final Request request;
+    private final boolean abortOnCancel;
     private ReactiveResponse response;
 
     protected ReactiveRequest(Request request) {
+        this(request, false);
+    }
+
+    private ReactiveRequest(Request request, boolean abortOnCancel) {
         this.request = request.listener(requestEvents)
                 .onResponseBegin(r -> {
                     synchronized (this) {
@@ -85,6 +90,7 @@ public class ReactiveRequest {
                 .onResponseSuccess(responseEvents)
                 .onResponseFailure(responseEvents)
                 .onComplete(responseEvents);
+        this.abortOnCancel = abortOnCancel;
     }
 
     /**
@@ -123,11 +129,11 @@ public class ReactiveRequest {
      * events.</p>
      *
      * @param contentFn the function that processes the response content
-     * @param <T> the element type of the processed response content
+     * @param <T>       the element type of the processed response content
      * @return a Publisher for the processed content
      */
     public <T> Publisher<T> response(BiFunction<ReactiveResponse, Publisher<ContentChunk>, Publisher<T>> contentFn) {
-        return new ResponseListenerProcessor<>(this, contentFn);
+        return new ResponseListenerProcessor<>(this, contentFn, abortOnCancel);
     }
 
     /**
@@ -151,6 +157,7 @@ public class ReactiveRequest {
      */
     public static class Builder {
         private final Request request;
+        private boolean abortOnCancel;
 
         public Builder(HttpClient client, String uri) {
             this(client.newRequest(uri));
@@ -167,7 +174,17 @@ public class ReactiveRequest {
          * @return this instance
          */
         public Builder content(Content content) {
-            request.content(new PublisherContentProvider(content));
+            request.body(new PublisherRequestContent(content));
+            return this;
+        }
+
+        /**
+         * @param abortOnCancel whether a request should be aborted when the
+         *                      content subscriber cancels the subscription
+         * @return this instance
+         */
+        public Builder abortOnCancel(boolean abortOnCancel) {
+            this.abortOnCancel = abortOnCancel;
             return this;
         }
 
@@ -175,7 +192,7 @@ public class ReactiveRequest {
          * @return a built ReactiveRequest
          */
         public ReactiveRequest build() {
-            return new ReactiveRequest(request);
+            return new ReactiveRequest(request, abortOnCancel);
         }
     }
 

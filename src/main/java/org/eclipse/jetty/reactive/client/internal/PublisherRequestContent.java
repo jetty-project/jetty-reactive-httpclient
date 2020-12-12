@@ -15,57 +15,52 @@
  */
 package org.eclipse.jetty.reactive.client.internal;
 
-import java.nio.ByteBuffer;
-import java.util.Iterator;
-
-import org.eclipse.jetty.client.AsyncContentProvider;
-import org.eclipse.jetty.client.api.ContentProvider;
-import org.eclipse.jetty.client.util.DeferredContentProvider;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.reactive.client.ContentChunk;
 import org.eclipse.jetty.reactive.client.ReactiveRequest;
+import org.eclipse.jetty.reactive.client.ReactiveRequest.Content;
 import org.eclipse.jetty.util.Callback;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
-public class PublisherContentProvider implements ContentProvider.Typed, AsyncContentProvider, Subscriber<ContentChunk> {
-    private final DeferredContentProvider provider = new DeferredContentProvider();
-    private final ReactiveRequest.Content content;
-    private Subscription subscription;
+public class PublisherRequestContent implements Request.Content, org.reactivestreams.Subscriber<ContentChunk> {
+    private final AsyncRequestContent asyncContent = new AsyncRequestContent();
+    private final ReactiveRequest.Content reactiveContent;
+    private org.reactivestreams.Subscription subscription;
 
-    public PublisherContentProvider(ReactiveRequest.Content content) {
-        this.content = content;
+    public PublisherRequestContent(Content content) {
+        this.reactiveContent = content;
         content.subscribe(this);
     }
 
     @Override
     public long getLength() {
-        return content.getLength();
+        return reactiveContent.getLength();
     }
 
     @Override
     public String getContentType() {
-        return content.getContentType();
+        return reactiveContent.getContentType();
     }
 
     @Override
-    public void setListener(Listener listener) {
-        provider.setListener(listener);
+    public Subscription subscribe(Consumer consumer, boolean emitInitialContent) {
+        return asyncContent.subscribe(consumer, emitInitialContent);
     }
 
     @Override
-    public Iterator<ByteBuffer> iterator() {
-        return provider.iterator();
+    public void fail(Throwable failure) {
+        onError(failure);
     }
 
     @Override
-    public void onSubscribe(Subscription subscription) {
+    public void onSubscribe(org.reactivestreams.Subscription subscription) {
         this.subscription = subscription;
         subscription.request(1);
     }
 
     @Override
     public void onNext(ContentChunk chunk) {
-        provider.offer(chunk.buffer, new Callback.Nested(chunk.callback) {
+        asyncContent.offer(chunk.buffer, new Callback.Nested(chunk.callback) {
             @Override
             public void succeeded() {
                 super.succeeded();
@@ -82,12 +77,12 @@ public class PublisherContentProvider implements ContentProvider.Typed, AsyncCon
 
     @Override
     public void onError(Throwable failure) {
-        provider.failed(failure);
+        asyncContent.fail(failure);
     }
 
     @Override
     public void onComplete() {
-        provider.close();
+        asyncContent.close();
     }
 
     @Override

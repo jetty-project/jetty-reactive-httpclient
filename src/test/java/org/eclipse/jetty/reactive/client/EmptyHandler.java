@@ -16,7 +16,6 @@
 package org.eclipse.jetty.reactive.client;
 
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -24,9 +23,9 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 
-public class EmptyHandler extends AbstractHandler.ErrorDispatchHandler {
+public class EmptyHandler extends AbstractHandler {
     @Override
-    protected void doNonErrorHandle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+    public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         jettyRequest.setHandled(true);
         service(target, jettyRequest, request, response);
     }

@@ -16,8 +16,11 @@
 package org.eclipse.jetty.reactive.client;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.net.URI;
+import java.time.Duration;
 import java.util.Random;
-
+import java.util.concurrent.TimeoutException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -26,8 +29,10 @@ import org.springframework.http.client.reactive.JettyClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.testng.Assert;
 import org.testng.annotations.Factory;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
+@Ignore("Spring WebFlux is only compatible with Jetty 9.4.x")
 public class ReactorTest extends AbstractTest {
     @Factory(dataProvider = "protocols", dataProviderClass = AbstractTest.class)
     public ReactorTest(String protocol) {
@@ -53,5 +58,36 @@ public class ReactorTest extends AbstractTest {
                 .block();
         Assert.assertNotNull(responseContent);
         Assert.assertEquals(data, responseContent);
+    }
+
+    @Test
+    public void testTotalTimeout() throws Exception {
+        long timeout = 1000;
+        String result = "HELLO";
+        prepare(new EmptyHandler() {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
+                try {
+                    Thread.sleep(2 * timeout);
+                    response.getWriter().write(result);
+                } catch (InterruptedException x) {
+                    throw new InterruptedIOException();
+                }
+            }
+        });
+
+        String timeoutResult = "TIMEOUT";
+        String responseContent = WebClient.builder()
+                .clientConnector(new JettyClientHttpConnector(httpClient()))
+                .build()
+                .get()
+                .uri(new URI(uri()))
+                .retrieve()
+                .bodyToMono(String.class)
+                .timeout(Duration.ofMillis(timeout))
+                .onErrorReturn(TimeoutException.class::isInstance, timeoutResult)
+                .block();
+
+        Assert.assertEquals(timeoutResult, responseContent);
     }
 }
