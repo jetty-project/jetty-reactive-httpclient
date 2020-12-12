@@ -86,7 +86,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jetty-version>9.4.35.v20201120</jetty-version>
     <rxjava-version>3.0.8</rxjava-version>
-    <spring-version>5.3.1</spring-version>
+    <spring-version>5.3.2</spring-version>
     <slf4j-version>1.7.30</slf4j-version>
     <log4j2-version>2.14.0</log4j2-version>
     <reactivestreams-version>1.0.3</reactivestreams-version>
@@ -177,6 +177,14 @@
     <pluginManagement>
       <plugins>
         <plugin>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <version>3.0.0</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>3.3.0</version>
+        </plugin>
+        <plugin>
           <artifactId>maven-clean-plugin</artifactId>
           <version>3.1.0</version>
         </plugin>
@@ -187,6 +195,10 @@
             <source>8</source>
             <target>8</target>
           </configuration>
+        </plugin>
+        <plugin>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>3.1.2</version>
         </plugin>
         <plugin>
           <artifactId>maven-deploy-plugin</artifactId>
@@ -369,7 +381,7 @@
     <dependency>
       <groupId>org.testng</groupId>
       <artifactId>testng</artifactId>
-      <version>7.1.0</version>
+      <version>7.3.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
