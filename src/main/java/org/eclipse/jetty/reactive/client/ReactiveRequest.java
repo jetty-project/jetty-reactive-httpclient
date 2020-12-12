@@ -18,7 +18,6 @@ package org.eclipse.jetty.reactive.client;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.function.BiFunction;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.reactive.client.internal.PublisherContent;

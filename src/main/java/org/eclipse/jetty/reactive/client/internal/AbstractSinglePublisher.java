@@ -17,7 +17,6 @@ package org.eclipse.jetty.reactive.client.internal;
 
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
-
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;

@@ -18,7 +18,6 @@ package org.eclipse.jetty.reactive.client;
 import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.function.BiFunction;
-
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
