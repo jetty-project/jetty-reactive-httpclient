@@ -1,3 +1,5 @@
+![GitHub CI](https://github.com/jetty-project/jetty-reactive-httpclient/workflows/GitHub%20CI/badge.svg)
+
 # Jetty ReactiveStream HttpClient
 
 A [ReactiveStreams](http://www.reactive-streams.org/) wrapper around 
