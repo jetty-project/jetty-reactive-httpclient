@@ -18,14 +18,13 @@ package org.eclipse.jetty.reactive.client.internal;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.CompletionException;
-
 import org.eclipse.jetty.util.MathUtils;
 import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
-    public static final Terminal COMPLETE = Subscriber::onComplete;
+    public static final Terminal<?> COMPLETE = Subscriber::onComplete;
     private static final Logger logger = LoggerFactory.getLogger(QueuedSinglePublisher.class);
 
     private final Queue<Object> items = new ArrayDeque<>();
@@ -52,7 +51,7 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
         if (logger.isDebugEnabled()) {
             logger.debug("failed {}", this, failure);
         }
-        return process(new Failure(failure));
+        return process(new Failure<>(failure));
     }
 
     @Override

@@ -17,7 +17,6 @@ package org.eclipse.jetty.reactive.client;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
-
 import org.eclipse.jetty.util.Callback;
 
 /**

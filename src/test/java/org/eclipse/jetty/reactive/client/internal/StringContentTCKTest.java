@@ -17,7 +17,6 @@ package org.eclipse.jetty.reactive.client.internal;
 
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
-
 import org.eclipse.jetty.reactive.client.ContentChunk;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;

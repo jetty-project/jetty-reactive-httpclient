@@ -52,8 +52,8 @@ public class ReactorTest extends AbstractTest {
         WebClient client = WebClient.builder().clientConnector(new JettyClientHttpConnector(httpClient())).build();
         byte[] responseContent = client.get()
                 .uri(uri())
-                .exchange()
-                .flatMap(r -> r.bodyToMono(byte[].class))
+                .retrieve()
+                .bodyToMono(byte[].class)
                 .block();
         Assert.assertNotNull(responseContent);
         Assert.assertEquals(data, responseContent);
