@@ -16,7 +16,6 @@
 package org.eclipse.jetty.reactive.client.internal;
 
 import java.util.Objects;
-
 import org.eclipse.jetty.reactive.client.ContentChunk;
 import org.eclipse.jetty.reactive.client.ReactiveRequest;
 import org.reactivestreams.Publisher;

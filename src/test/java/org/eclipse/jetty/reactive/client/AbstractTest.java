@@ -16,7 +16,6 @@
 package org.eclipse.jetty.reactive.client;
 
 import java.lang.reflect.Method;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;

@@ -23,7 +23,6 @@ import java.util.Random;
 import java.util.concurrent.TimeoutException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import org.eclipse.jetty.server.Request;
 import org.springframework.http.client.reactive.JettyClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -51,8 +50,8 @@ public class ReactorTest extends AbstractTest {
         WebClient client = WebClient.builder().clientConnector(new JettyClientHttpConnector(httpClient())).build();
         byte[] responseContent = client.get()
                 .uri(uri())
-                .exchange()
-                .flatMap(r -> r.bodyToMono(byte[].class))
+                .retrieve()
+                .bodyToMono(byte[].class)
                 .block();
         Assert.assertNotNull(responseContent);
         Assert.assertEquals(data, responseContent);

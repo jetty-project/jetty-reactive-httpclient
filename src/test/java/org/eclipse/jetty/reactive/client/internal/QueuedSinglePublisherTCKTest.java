@@ -16,7 +16,6 @@
 package org.eclipse.jetty.reactive.client.internal;
 
 import java.lang.reflect.Method;
-
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;

@@ -17,7 +17,6 @@ package org.eclipse.jetty.reactive.client.internal;
 
 import java.nio.ByteBuffer;
 import java.util.Iterator;
-
 import org.eclipse.jetty.client.AsyncContentProvider;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
