@@ -86,7 +86,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jetty-version>11.0.2</jetty-version>
     <rxjava-version>3.0.12</rxjava-version>
-    <spring-version>5.3.5</spring-version>
+    <spring-version>5.3.6</spring-version>
     <slf4j-version>2.0.0-alpha1</slf4j-version>
     <log4j2-version>2.14.1</log4j2-version>
     <reactivestreams-version>1.0.3</reactivestreams-version>
@@ -233,7 +233,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-release-plugin</artifactId>
-          <version>3.0.0-M1</version>
+          <version>3.0.0-M4</version>
           <configuration>
             <goals>deploy</goals>
             <preparationGoals>clean install</preparationGoals>
@@ -271,7 +271,7 @@
         <plugin>
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>
-          <version>4.0</version>
+          <version>4.1</version>
         </plugin>
       </plugins>
     </pluginManagement>
