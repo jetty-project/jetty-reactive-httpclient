@@ -84,7 +84,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jetty-version>9.4.40.v20210413</jetty-version>
+    <jetty-version>9.4.41.v20210516</jetty-version>
     <rxjava-version>3.0.12</rxjava-version>
     <spring-version>5.3.6</spring-version>
     <slf4j-version>1.7.30</slf4j-version>
