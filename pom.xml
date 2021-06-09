@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-reactive-httpclient</artifactId>
-  <version>3.0.3</version>
+  <version>3.0.4-SNAPSHOT</version>
   <packaging>bundle</packaging>
   <name>Jetty ReactiveStreams HttpClient</name>
 
@@ -74,7 +74,7 @@
     <connection>scm:git:git://github.com/jetty-project/jetty-reactive-httpclient.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/jetty-project/jetty-reactive-httpclient.git</developerConnection>
     <url>https://github.com/jetty-project/jetty-reactive-httpclient</url>
-    <tag>3.0.3</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <organization>
