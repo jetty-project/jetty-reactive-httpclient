@@ -86,7 +86,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jetty-version>10.0.7</jetty-version>
     <rxjava-version>3.1.3</rxjava-version>
-    <spring-version>5.3.14</spring-version>
+    <spring-version>5.3.15</spring-version>
     <slf4j-version>2.0.0-alpha5</slf4j-version>
     <log4j2-version>2.17.1</log4j2-version>
     <reactivestreams-version>1.0.3</reactivestreams-version>
@@ -190,7 +190,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.8.1</version>
+          <version>3.9.0</version>
           <configuration>
             <source>11</source>
             <target>11</target>
@@ -219,7 +219,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.2.1</version>
+          <version>3.2.2</version>
         </plugin>
         <plugin>
           <artifactId>maven-javadoc-plugin</artifactId>
