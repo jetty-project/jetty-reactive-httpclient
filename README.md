@@ -7,9 +7,12 @@ A [ReactiveStreams](http://www.reactive-streams.org/) wrapper around
 [HttpClient](http://www.eclipse.org/jetty/documentation/current/http-client.html).
 
 ## Versions
-`1.1.x` -> Java 8, Jetty 9.4.x  
-`2.0.x` -> Java 11, Jetty 10.0.x  
-`3.0.x` -> Java 11, Jetty 11.0.x  
+
+Jetty ReactiveStream HttpClient Versions | Min Java Version | Min Jetty Version
+---- | ---- | ----
+`1.1.x` | Java 8 | Jetty 9.4.x
+`2.0.x` | Java 11 | Jetty 10.0.x
+`3.0.x` | Java 11 | Jetty 11.0.x
 
 ## Usage
 
