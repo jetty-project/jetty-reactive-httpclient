@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2021 the original author or authors.
+ * Copyright (c) 2017-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.eclipse.jetty.reactive.client.internal;
 
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
+
 import org.eclipse.jetty.reactive.client.ContentChunk;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;
