@@ -381,8 +381,8 @@
     <dependency>
       <groupId>org.testng</groupId>
       <artifactId>testng</artifactId>
-      <!-- TestNG stays at version 7.5 to support Java 8 -->
-      <version>7.5</version>
+      <!-- TestNG stays at version 7.6.0 to support Java 8 -->
+      <version>7.6.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
