@@ -85,7 +85,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jetty-version>9.4.46.v20220331</jetty-version>
-    <rxjava-version>3.1.4</rxjava-version>
+    <rxjava-version>3.1.5</rxjava-version>
     <spring-version>5.3.20</spring-version>
     <slf4j-version>1.7.36</slf4j-version>
     <log4j2-version>2.17.2</log4j2-version>
@@ -222,7 +222,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.3.2</version>
+          <version>3.4.0</version>
           <configuration>
             <source>8</source>
           </configuration>
@@ -244,7 +244,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-site-plugin</artifactId>
-          <version>3.11.0</version>
+          <version>3.12.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-source-plugin</artifactId>
