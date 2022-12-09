@@ -84,10 +84,10 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jetty-version>9.4.49.v20220914</jetty-version>
+    <jetty-version>9.4.50.v20221201</jetty-version>
     <rxjava-version>3.1.5</rxjava-version>
-    <spring-version>5.3.23</spring-version>
-    <slf4j-version>2.0.3</slf4j-version>
+    <spring-version>5.3.24</spring-version>
+    <slf4j-version>2.0.5</slf4j-version>
     <log4j2-version>2.19.0</log4j2-version>
     <reactivestreams-version>1.0.4</reactivestreams-version>
   </properties>
@@ -198,7 +198,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.3.0</version>
+          <version>3.4.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-deploy-plugin</artifactId>
@@ -214,7 +214,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-install-plugin</artifactId>
-          <version>3.0.1</version>
+          <version>3.1.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>
@@ -229,7 +229,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-release-plugin</artifactId>
-          <version>3.0.0-M6</version>
+          <version>3.0.0-M7</version>
           <configuration>
             <goals>deploy</goals>
             <preparationGoals>clean install</preparationGoals>
