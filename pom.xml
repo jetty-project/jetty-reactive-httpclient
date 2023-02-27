@@ -84,11 +84,11 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jetty-version>11.0.13</jetty-version>
-    <rxjava-version>3.1.5</rxjava-version>
-    <spring-version>5.3.24</spring-version>
-    <slf4j-version>2.0.5</slf4j-version>
-    <log4j2-version>2.19.0</log4j2-version>
+    <jetty-version>11.0.14</jetty-version>
+    <rxjava-version>3.1.6</rxjava-version>
+    <spring-version>5.3.25</spring-version>
+    <slf4j-version>2.0.6</slf4j-version>
+    <log4j2-version>2.20.0</log4j2-version>
     <reactivestreams-version>1.0.4</reactivestreams-version>
   </properties>
 
@@ -182,7 +182,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>3.4.2</version>
+          <version>3.5.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-clean-plugin</artifactId>
@@ -190,7 +190,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.10.1</version>
+          <version>3.11.0</version>
           <configuration>
             <source>11</source>
             <target>11</target>
@@ -199,15 +199,15 @@
         </plugin>
         <plugin>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.4.0</version>
+          <version>3.5.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-deploy-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>3.1.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.2.1</version>
         </plugin>
         <plugin>
           <artifactId>maven-gpg-plugin</artifactId>
@@ -223,7 +223,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.4.1</version>
+          <version>3.5.0</version>
           <configuration>
             <source>8</source>
             <additionalOptions>
@@ -256,7 +256,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.0.0-M5</version>
+          <version>3.0.0-M9</version>
         </plugin>
         <plugin>
           <groupId>org.apache.felix</groupId>
@@ -367,7 +367,7 @@
     <dependency>
       <groupId>org.testng</groupId>
       <artifactId>testng</artifactId>
-      <version>7.7.0</version>
+      <version>7.7.1</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

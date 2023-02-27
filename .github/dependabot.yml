@@ -3,6 +3,32 @@ updates:
   - package-ecosystem: "maven"
     directory: "/"
     open-pull-requests-limit: 50
+    target-branch: "1.1.x"
+    schedule:
+      interval: "daily"
+    ignore:
+      - dependency-name: "org.eclipse.jetty:*"
+        versions: [ ">=10.0.0" ]
+      - dependency-name: "org.springframework:*"
+        versions: [ ">=6.0.0" ]
+      - dependency-name: "org.testng:testng"
+        versions: [ ">=7.6.0" ]
+
+  - package-ecosystem: "maven"
+    directory: "/"
+    open-pull-requests-limit: 50
+    target-branch: "2.0.x"
+    schedule:
+      interval: "daily"
+    ignore:
+      - dependency-name: "org.eclipse.jetty:*"
+        versions: [ ">=11.0.0" ]
+      - dependency-name: "org.springframework:*"
+        versions: [ ">=6.0.0" ]
+
+  - package-ecosystem: "maven"
+    directory: "/"
+    open-pull-requests-limit: 50
     target-branch: "3.0.x"
     schedule:
       interval: "daily"
@@ -11,6 +37,7 @@ updates:
         versions: [ ">=12.0.0" ]
       - dependency-name: "org.springframework:*"
         versions: [ ">=6.0.0" ]
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
