@@ -18,6 +18,7 @@ package org.eclipse.jetty.reactive.client.internal;
 import java.util.Objects;
 
 import org.eclipse.jetty.util.MathUtils;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -56,7 +57,7 @@ public abstract class AbstractSingleProcessor<I, O> extends AbstractSinglePublis
     protected void onRequest(Subscriber<? super O> subscriber, long n) {
         long demand;
         Subscription upStream;
-        synchronized (this) {
+        try (AutoLock ignored = lock()) {
             demand = MathUtils.cappedAdd(this.demand, n);
             upStream = upStream();
             this.demand = upStream == null ? demand : 0;
@@ -79,7 +80,7 @@ public abstract class AbstractSingleProcessor<I, O> extends AbstractSinglePublis
         Objects.requireNonNull(subscription, "invalid 'null' subscription");
         long demand = 0;
         boolean cancel = false;
-        synchronized (this) {
+        try (AutoLock ignored = lock()) {
             if (this.upStream != null) {
                 cancel = true;
             } else {
@@ -100,7 +101,7 @@ public abstract class AbstractSingleProcessor<I, O> extends AbstractSinglePublis
     }
 
     protected Subscription upStream() {
-        synchronized (this) {
+        try (AutoLock ignored = lock()) {
             return upStream;
         }
     }

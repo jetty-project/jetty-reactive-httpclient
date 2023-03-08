@@ -20,6 +20,7 @@ import java.util.Queue;
 import java.util.concurrent.CompletionException;
 
 import org.eclipse.jetty.util.MathUtils;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +59,7 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
     @Override
     protected void onRequest(Subscriber<? super T> subscriber, long n) {
         boolean proceed = false;
-        synchronized (this) {
+        try (AutoLock ignored = lock()) {
             demand = MathUtils.cappedAdd(demand, n);
             if (stalled) {
                 stalled = false;
@@ -72,7 +73,7 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
 
     private boolean process(Object item) {
         Subscriber<? super T> subscriber;
-        synchronized (this) {
+        try (AutoLock ignored = lock()) {
             if (terminated != null) {
                 throw new IllegalStateException(terminated);
             }
@@ -96,7 +97,7 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
     }
 
     private void proceed(Subscriber<? super T> subscriber) {
-        synchronized (this) {
+        try (AutoLock ignored = lock()) {
             if (active) {
                 return;
             }
@@ -106,7 +107,7 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
         Object item;
         boolean terminal;
         while (true) {
-            synchronized (this) {
+            try (AutoLock ignored = lock()) {
                 item = items.peek();
                 if (item == null) {
                     stalled = true;

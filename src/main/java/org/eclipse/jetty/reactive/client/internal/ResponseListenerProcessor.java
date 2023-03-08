@@ -31,6 +31,7 @@ import org.eclipse.jetty.reactive.client.ReactiveResponse;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.MathUtils;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
@@ -146,7 +147,7 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
     @Override
     protected void onRequest(Subscriber<? super T> subscriber, long n) {
         boolean send;
-        synchronized (this) {
+        try (AutoLock ignored = lock()) {
             send = !requestSent;
             requestSent = true;
         }
@@ -193,7 +194,7 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
 
         private void accept(LongConsumer consumer) {
             long demand;
-            synchronized (this) {
+            try (AutoLock ignored = lock()) {
                 upstreamDemand = consumer;
                 demand = initialDemand;
                 initialDemand = 0;
@@ -205,7 +206,7 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
         protected void onRequest(Subscriber<? super ContentChunk> subscriber, long n) {
             super.onRequest(subscriber, n);
             LongConsumer demand;
-            synchronized (this) {
+            try (AutoLock ignored = lock()) {
                 demand = upstreamDemand;
                 if (demand == null) {
                     initialDemand = MathUtils.cappedAdd(initialDemand, n);
@@ -218,7 +219,7 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
 
         @Override
         protected void onNext(Subscriber<? super ContentChunk> subscriber, ContentChunk item) {
-            synchronized (this) {
+            try (AutoLock ignored = lock()) {
                 upstreamDemand = chunks.remove(item);
             }
             super.onNext(subscriber, item);
