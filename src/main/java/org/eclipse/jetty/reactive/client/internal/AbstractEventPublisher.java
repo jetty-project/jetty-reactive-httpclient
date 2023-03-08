@@ -16,6 +16,7 @@
 package org.eclipse.jetty.reactive.client.internal;
 
 import org.eclipse.jetty.util.MathUtils;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.reactivestreams.Subscriber;
 
 public abstract class AbstractEventPublisher<T> extends AbstractSinglePublisher<T> {
@@ -28,7 +29,7 @@ public abstract class AbstractEventPublisher<T> extends AbstractSinglePublisher<
     protected void onRequest(Subscriber<? super T> subscriber, long n) {
         boolean notify = false;
         Throwable failure = null;
-        synchronized (this) {
+        try (AutoLock ignored = lock()) {
             demand = MathUtils.cappedAdd(demand, n);
             boolean isInitial = initial;
             initial = false;
@@ -48,7 +49,7 @@ public abstract class AbstractEventPublisher<T> extends AbstractSinglePublisher<
 
     protected void emit(T event) {
         Subscriber<? super T> subscriber = null;
-        synchronized (this) {
+        try (AutoLock ignored = lock()) {
             if (!isCancelled() && demand > 0) {
                 --demand;
                 subscriber = subscriber();
@@ -61,7 +62,7 @@ public abstract class AbstractEventPublisher<T> extends AbstractSinglePublisher<
 
     protected void succeed() {
         Subscriber<? super T> subscriber;
-        synchronized (this) {
+        try (AutoLock ignored = lock()) {
             terminated = true;
             subscriber = subscriber();
         }
@@ -72,7 +73,7 @@ public abstract class AbstractEventPublisher<T> extends AbstractSinglePublisher<
 
     protected void fail(Throwable failure) {
         Subscriber<? super T> subscriber;
-        synchronized (this) {
+        try (AutoLock ignored = lock()) {
             terminated = true;
             this.failure = failure;
             subscriber = subscriber();

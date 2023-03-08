@@ -71,7 +71,7 @@ public class ReactiveRequest {
     private final ResponseEventPublisher responseEvents = new ResponseEventPublisher(this);
     private final Request request;
     private final boolean abortOnCancel;
-    private ReactiveResponse response;
+    private volatile ReactiveResponse response;
 
     protected ReactiveRequest(Request request) {
         this(request, false);
@@ -80,9 +80,7 @@ public class ReactiveRequest {
     private ReactiveRequest(Request request, boolean abortOnCancel) {
         this.request = request.listener(requestEvents)
                 .onResponseBegin(r -> {
-                    synchronized (this) {
-                        this.response = new ReactiveResponse(this, r);
-                    }
+                    this.response = new ReactiveResponse(this, r);
                 })
                 .onResponseBegin(responseEvents)
                 .onResponseHeaders(responseEvents)
@@ -98,9 +96,7 @@ public class ReactiveRequest {
      * or null if the response is not available yet
      */
     public ReactiveResponse getReactiveResponse() {
-        synchronized (this) {
-            return response;
-        }
+        return response;
     }
 
     /**

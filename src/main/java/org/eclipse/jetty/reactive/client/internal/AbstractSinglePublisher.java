@@ -18,6 +18,7 @@ package org.eclipse.jetty.reactive.client.internal;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -32,14 +33,19 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractSinglePublisher<T> implements Publisher<T>, Subscription {
     private static final Logger logger = LoggerFactory.getLogger(AbstractSinglePublisher.class);
 
+    private final AutoLock lock = new AutoLock();
     private Subscriber<? super T> subscriber;
     private boolean cancelled;
+
+    protected AutoLock lock() {
+        return lock.lock();
+    }
 
     @Override
     public void subscribe(Subscriber<? super T> subscriber) {
         Objects.requireNonNull(subscriber, "invalid 'null' subscriber");
         Throwable failure = null;
-        synchronized (this) {
+        try (AutoLock ignored = lock()) {
             if (this.subscriber != null) {
                 failure = new IllegalStateException("multiple subscribers not supported");
             } else {
@@ -60,7 +66,7 @@ public abstract class AbstractSinglePublisher<T> implements Publisher<T>, Subscr
     }
 
     protected Subscriber<? super T> subscriber() {
-        synchronized (this) {
+        try (AutoLock ignored = lock()) {
             return subscriber;
         }
     }
@@ -69,7 +75,7 @@ public abstract class AbstractSinglePublisher<T> implements Publisher<T>, Subscr
     public void request(long n) {
         Subscriber<? super T> subscriber;
         Throwable failure = null;
-        synchronized (this) {
+        try (AutoLock ignored = lock()) {
             if (isCancelled()) {
                 return;
             }
@@ -94,7 +100,7 @@ public abstract class AbstractSinglePublisher<T> implements Publisher<T>, Subscr
     @Override
     public void cancel() {
         Subscriber<? super T> subscriber;
-        synchronized (this) {
+        try (AutoLock ignored = lock()) {
             cancelled = true;
             subscriber = this.subscriber;
             this.subscriber = null;
@@ -105,7 +111,7 @@ public abstract class AbstractSinglePublisher<T> implements Publisher<T>, Subscr
     }
 
     protected boolean isCancelled() {
-        synchronized (this) {
+        try (AutoLock ignored = lock()) {
             return cancelled;
         }
     }
