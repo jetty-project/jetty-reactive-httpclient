@@ -4,7 +4,7 @@
 
 A [ReactiveStreams](http://www.reactive-streams.org/) wrapper around 
 [Jetty](https://eclipse.org/jetty)'s 
-[HttpClient](http://www.eclipse.org/jetty/documentation/current/http-client.html).
+[HttpClient](https://www.eclipse.org/jetty/documentation/jetty-11/programming-guide/index.html#pg-client-http).
 
 ## Versions
 

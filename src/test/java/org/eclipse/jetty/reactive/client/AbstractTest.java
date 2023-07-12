@@ -63,7 +63,7 @@ public class AbstractTest {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
-        connector = new ServerConnector(server, createServerConnectionFactory(protocol));
+        connector = new ServerConnector(server, 1, 1, createServerConnectionFactory(protocol));
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();
