@@ -16,18 +16,18 @@
 package org.eclipse.jetty.reactive.client.internal;
 
 import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.AsyncContent;
-import org.eclipse.jetty.reactive.client.ContentChunk;
 import org.eclipse.jetty.reactive.client.ReactiveRequest;
-import org.eclipse.jetty.reactive.client.ReactiveRequest.Content;
 import org.eclipse.jetty.util.Callback;
+import org.reactivestreams.Subscriber;
 
-public class PublisherRequestContent implements Request.Content, org.reactivestreams.Subscriber<ContentChunk> {
+public class PublisherRequestContent implements Request.Content, Subscriber<Content.Chunk> {
     private final AsyncContent asyncContent = new AsyncContent();
     private final ReactiveRequest.Content reactiveContent;
     private org.reactivestreams.Subscription subscription;
 
-    public PublisherRequestContent(Content content) {
+    public PublisherRequestContent(ReactiveRequest.Content content) {
         this.reactiveContent = content;
         content.subscribe(this);
     }
@@ -38,7 +38,7 @@ public class PublisherRequestContent implements Request.Content, org.reactivestr
     }
 
     @Override
-    public org.eclipse.jetty.io.Content.Chunk read() {
+    public Content.Chunk read() {
         return asyncContent.read();
     }
 
@@ -64,20 +64,10 @@ public class PublisherRequestContent implements Request.Content, org.reactivestr
     }
 
     @Override
-    public void onNext(ContentChunk chunk) {
-        asyncContent.write(false, chunk.buffer, new Callback.Nested(chunk.callback) {
-            @Override
-            public void succeeded() {
-                super.succeeded();
-                subscription.request(1);
-            }
-
-            @Override
-            public void failed(Throwable x) {
-                super.failed(x);
-                subscription.cancel();
-            }
-        });
+    public void onNext(Content.Chunk chunk) {
+        chunk.retain();
+        asyncContent.write(chunk.isLast(), chunk.getByteBuffer(), Callback.from(chunk::release,
+                Callback.from(() -> subscription.request(1), x -> subscription.cancel())));
     }
 
     @Override

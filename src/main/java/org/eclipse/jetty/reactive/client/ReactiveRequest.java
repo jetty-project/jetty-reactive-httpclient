@@ -21,6 +21,7 @@ import java.util.function.BiFunction;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.io.Content.Chunk;
 import org.eclipse.jetty.reactive.client.internal.PublisherContent;
 import org.eclipse.jetty.reactive.client.internal.PublisherRequestContent;
 import org.eclipse.jetty.reactive.client.internal.RequestEventPublisher;
@@ -128,7 +129,7 @@ public class ReactiveRequest {
      * @param <T>       the element type of the processed response content
      * @return a Publisher for the processed content
      */
-    public <T> Publisher<T> response(BiFunction<ReactiveResponse, Publisher<ContentChunk>, Publisher<T>> contentFn) {
+    public <T> Publisher<T> response(BiFunction<ReactiveResponse, Publisher<Chunk>, Publisher<T>> contentFn) {
         return new ResponseListenerProcessor<>(this, contentFn, abortOnCancel);
     }
 
@@ -286,7 +287,7 @@ public class ReactiveRequest {
     /**
      * A Publisher of content chunks that also specifies the content length and type.
      */
-    public static interface Content extends Publisher<ContentChunk> {
+    public interface Content extends Publisher<Chunk> {
         /**
          * @return the content length
          */
@@ -301,11 +302,11 @@ public class ReactiveRequest {
             return new StringContent(string, mediaType, charset);
         }
 
-        public static Content fromPublisher(Publisher<ContentChunk> publisher, String contentType) {
+        public static Content fromPublisher(Publisher<Chunk> publisher, String contentType) {
             return new PublisherContent(publisher, contentType);
         }
 
-        public static Content fromPublisher(Publisher<ContentChunk> publisher, String mediaType, Charset charset) {
+        public static Content fromPublisher(Publisher<Chunk> publisher, String mediaType, Charset charset) {
             return fromPublisher(publisher, mediaType + ";charset=" + charset.name());
         }
     }

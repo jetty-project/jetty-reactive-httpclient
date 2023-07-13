@@ -15,17 +15,16 @@
  */
 package org.eclipse.jetty.reactive.client.internal;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.reactive.client.ContentChunk;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.reactive.client.ReactiveResponse;
 
-public class BufferingProcessor extends AbstractSingleProcessor<ContentChunk, String> {
-    private final List<byte[]> buffers = new ArrayList<>();
+public class BufferingProcessor extends AbstractSingleProcessor<Content.Chunk, String> {
+    private final List<Content.Chunk> chunks = new ArrayList<>();
     private final ReactiveResponse response;
 
     public BufferingProcessor(ReactiveResponse response) {
@@ -33,24 +32,22 @@ public class BufferingProcessor extends AbstractSingleProcessor<ContentChunk, St
     }
 
     @Override
-    public void onNext(ContentChunk chunk) {
-        ByteBuffer buffer = chunk.buffer;
-        byte[] bytes = new byte[buffer.remaining()];
-        buffer.get(bytes);
-        buffers.add(bytes);
-        chunk.callback.succeeded();
+    public void onNext(Content.Chunk chunk) {
+        chunk.retain();
+        chunks.add(chunk);
         upStreamRequest(1);
     }
 
     @Override
     public void onComplete() {
-        int length = buffers.stream().mapToInt(bytes -> bytes.length).sum();
+        int length = chunks.stream().mapToInt(Content.Chunk::remaining).sum();
         byte[] bytes = new byte[length];
         int offset = 0;
-        for (byte[] b : buffers) {
-            int l = b.length;
-            System.arraycopy(b, 0, bytes, offset, l);
+        for (Content.Chunk chunk : chunks) {
+            int l = chunk.remaining();
+            chunk.getByteBuffer().get(bytes, offset, l);
             offset += l;
+            chunk.release();
         }
 
         String encoding = response.getEncoding();

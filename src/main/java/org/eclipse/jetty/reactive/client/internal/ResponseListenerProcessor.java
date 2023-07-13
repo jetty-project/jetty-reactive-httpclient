@@ -23,10 +23,8 @@ import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.reactive.client.ContentChunk;
 import org.eclipse.jetty.reactive.client.ReactiveRequest;
 import org.eclipse.jetty.reactive.client.ReactiveResponse;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -42,8 +40,8 @@ import org.slf4j.LoggerFactory;
  * structure (for example, splits them further, or coalesce them into a single chunk) and
  * returns the application Processor to this implementation, which then builds this chain:</p>
  * <pre>
- * HTTP response content chunks Publisher - (produces ContentChunks)
- *   Application Processor                - (processes ContentChunks and produces Ts)
+ * HTTP response content chunks Publisher - (produces Content.Chunks)
+ *   Application Processor                - (processes Content.Chunks and produces Ts)
  *     ResponseListenerProcessor          - (forwards Ts to application)
  *       Application Subscriber           - (consumes Ts)
  * </pre>
@@ -61,12 +59,12 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
 
     private final ContentPublisher content = new ContentPublisher();
     private final ReactiveRequest request;
-    private final BiFunction<ReactiveResponse, Publisher<ContentChunk>, Publisher<T>> contentFn;
+    private final BiFunction<ReactiveResponse, Publisher<Content.Chunk>, Publisher<T>> contentFn;
     private final boolean abortOnCancel;
     private boolean requestSent;
     private boolean responseReceived;
 
-    public ResponseListenerProcessor(ReactiveRequest request, BiFunction<ReactiveResponse, Publisher<ContentChunk>, Publisher<T>> contentFn, boolean abortOnCancel) {
+    public ResponseListenerProcessor(ReactiveRequest request, BiFunction<ReactiveResponse, Publisher<Content.Chunk>, Publisher<T>> contentFn, boolean abortOnCancel) {
         this.request = request;
         this.contentFn = contentFn;
         this.abortOnCancel = abortOnCancel;
@@ -174,9 +172,9 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
     }
 
     /**
-     * <p>Publishes response {@link ContentChunk} to application code.</p>
+     * <p>Publishes response {@link Content.Chunk}s to application code.</p>
      */
-    private static class ContentPublisher extends QueuedSinglePublisher<ContentChunk> {
+    private static class ContentPublisher extends QueuedSinglePublisher<Content.Chunk> {
         private boolean initialDemand;
         private Content.Source source;
 
@@ -192,7 +190,7 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
         }
 
         @Override
-        protected void onRequest(Subscriber<? super ContentChunk> subscriber, long n) {
+        protected void onRequest(Subscriber<? super Content.Chunk> subscriber, long n) {
             if (logger.isDebugEnabled()) {
                 logger.debug("demand {} on {}", n, this);
             }
@@ -223,15 +221,9 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
                 return;
             }
             if (chunk.hasRemaining()) {
-                offer(new ContentChunk(chunk.getByteBuffer(), new Callback.Completing() {
-                    @Override
-                    public void completed() {
-                        chunk.release();
-                    }
-                }));
-            } else {
-                chunk.release();
+                offer(chunk);
             }
+            chunk.release();
         }
     }
 }

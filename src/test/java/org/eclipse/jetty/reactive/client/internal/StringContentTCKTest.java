@@ -18,13 +18,13 @@ package org.eclipse.jetty.reactive.client.internal;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 
-import org.eclipse.jetty.reactive.client.ContentChunk;
+import org.eclipse.jetty.io.Content;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;
 import org.testng.annotations.BeforeMethod;
 
-public class StringContentTCKTest extends PublisherVerification<ContentChunk> {
+public class StringContentTCKTest extends PublisherVerification<Content.Chunk> {
     public StringContentTCKTest() {
         super(new TestEnvironment());
     }
@@ -35,12 +35,12 @@ public class StringContentTCKTest extends PublisherVerification<ContentChunk> {
     }
 
     @Override
-    public Publisher<ContentChunk> createPublisher(long elements) {
+    public Publisher<Content.Chunk> createPublisher(long elements) {
         return new StringContent("data", "text/plain", StandardCharsets.UTF_8);
     }
 
     @Override
-    public Publisher<ContentChunk> createFailedPublisher() {
+    public Publisher<Content.Chunk> createFailedPublisher() {
         return null;
     }
 

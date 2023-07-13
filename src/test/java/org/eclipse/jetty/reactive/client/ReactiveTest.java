@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -41,7 +42,7 @@ public class ReactiveTest extends AbstractTest {
         prepare(new Handler.Abstract() {
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback) {
-                callback.succeeded();
+                Content.Sink.write(response, true, "hello world", callback);
                 return true;
             }
         });

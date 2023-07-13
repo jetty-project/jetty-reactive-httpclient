@@ -15,10 +15,10 @@
  */
 package org.eclipse.jetty.reactive.client.internal;
 
-import org.eclipse.jetty.reactive.client.ContentChunk;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.reactive.client.ReactiveResponse;
 
-public class DiscardingProcessor extends AbstractSingleProcessor<ContentChunk, ReactiveResponse> {
+public class DiscardingProcessor extends AbstractSingleProcessor<Content.Chunk, ReactiveResponse> {
     private final ReactiveResponse response;
 
     public DiscardingProcessor(ReactiveResponse response) {
@@ -26,8 +26,7 @@ public class DiscardingProcessor extends AbstractSingleProcessor<ContentChunk, R
     }
 
     @Override
-    public void onNext(ContentChunk chunk) {
-        chunk.callback.succeeded();
+    public void onNext(Content.Chunk chunk) {
         upStreamRequest(1);
     }
 

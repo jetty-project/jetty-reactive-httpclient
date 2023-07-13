@@ -22,6 +22,7 @@ import java.util.function.BiFunction;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.Content.Chunk;
 import org.eclipse.jetty.reactive.client.internal.BufferingProcessor;
 import org.eclipse.jetty.reactive.client.internal.DiscardingProcessor;
 import org.reactivestreams.Publisher;
@@ -132,7 +133,7 @@ public class ReactiveResponse {
         /**
          * @return a response content processing function that discards the content
          */
-        public static BiFunction<ReactiveResponse, Publisher<ContentChunk>, Publisher<ReactiveResponse>> discard() {
+        public static BiFunction<ReactiveResponse, Publisher<Chunk>, Publisher<ReactiveResponse>> discard() {
             return (response, content) -> {
                 DiscardingProcessor result = new DiscardingProcessor(response);
                 content.subscribe(result);
@@ -143,7 +144,7 @@ public class ReactiveResponse {
         /**
          * @return a response content processing function that converts the content to a string
          */
-        public static BiFunction<ReactiveResponse, Publisher<ContentChunk>, Publisher<String>> asString() {
+        public static BiFunction<ReactiveResponse, Publisher<Chunk>, Publisher<String>> asString() {
             return (response, content) -> {
                 BufferingProcessor result = new BufferingProcessor(response);
                 content.subscribe(result);

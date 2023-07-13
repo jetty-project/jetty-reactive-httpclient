@@ -22,14 +22,14 @@ import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.eclipse.jetty.reactive.client.ContentChunk;
+import org.eclipse.jetty.io.Content;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.IdentityProcessorVerification;
 import org.reactivestreams.tck.TestEnvironment;
 import org.testng.annotations.BeforeMethod;
 
-public class SingleProcessorTCKTest extends IdentityProcessorVerification<ContentChunk> {
+public class SingleProcessorTCKTest extends IdentityProcessorVerification<Content.Chunk> {
     public SingleProcessorTCKTest() {
         super(new TestEnvironment());
     }
@@ -40,17 +40,17 @@ public class SingleProcessorTCKTest extends IdentityProcessorVerification<Conten
     }
 
     @Override
-    public Processor<ContentChunk, ContentChunk> createIdentityProcessor(int bufferSize) {
-        return new AbstractSingleProcessor<ContentChunk, ContentChunk>() {
+    public Processor<Content.Chunk, Content.Chunk> createIdentityProcessor(int bufferSize) {
+        return new AbstractSingleProcessor<>() {
             @Override
-            public void onNext(ContentChunk contentChunk) {
-                downStreamOnNext(Objects.requireNonNull(contentChunk));
+            public void onNext(Content.Chunk chunk) {
+                downStreamOnNext(Objects.requireNonNull(chunk));
             }
         };
     }
 
     @Override
-    public Publisher<ContentChunk> createFailedPublisher() {
+    public Publisher<Content.Chunk> createFailedPublisher() {
         return null;
     }
 
@@ -60,12 +60,12 @@ public class SingleProcessorTCKTest extends IdentityProcessorVerification<Conten
     }
 
     @Override
-    public ContentChunk createElement(int element) {
+    public Content.Chunk createElement(int element) {
         return newChunk("element_" + element);
     }
 
-    private ContentChunk newChunk(String data) {
-        return new ContentChunk(ByteBuffer.wrap(data.getBytes(StandardCharsets.UTF_8)));
+    private Content.Chunk newChunk(String data) {
+        return Content.Chunk.from(ByteBuffer.wrap(data.getBytes(StandardCharsets.UTF_8)), false);
     }
 
     @Override

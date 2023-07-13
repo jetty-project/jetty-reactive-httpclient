@@ -245,32 +245,13 @@ public class RxJava2Test extends AbstractTest {
         // Transform it to chunks, showing what you can use the callback for.
         Charset charset = StandardCharsets.UTF_8;
         ByteBufferPool bufferPool = httpClient().getByteBufferPool();
-        Flowable<ContentChunk> chunks = stream.map(item -> item.getBytes(charset))
+        Flowable<Content.Chunk> chunks = stream.map(item -> item.getBytes(charset))
                 .map(bytes -> {
                     RetainableByteBuffer buffer = bufferPool.acquire(bytes.length, true);
                     BufferUtil.append(buffer.getByteBuffer(), bytes, 0, bytes.length);
                     return buffer;
                 })
-                .map(buffer -> new ContentChunk(buffer.getByteBuffer(), new Callback() {
-                    @Override
-                    public void succeeded() {
-                        complete();
-                    }
-
-                    @Override
-                    public void failed(Throwable x) {
-                        complete();
-                    }
-
-                    @Override
-                    public InvocationType getInvocationType() {
-                        return InvocationType.NON_BLOCKING;
-                    }
-
-                    private void complete() {
-                        buffer.release();
-                    }
-                }));
+                .map(buffer -> Content.Chunk.from(buffer.getByteBuffer(), false, buffer::release));
 
         ReactiveRequest request = ReactiveRequest.newBuilder(httpClient(), uri())
                 .content(ReactiveRequest.Content.fromPublisher(chunks, "text/plain", charset))
@@ -316,19 +297,22 @@ public class RxJava2Test extends AbstractTest {
 
         ReactiveRequest request = ReactiveRequest.newBuilder(httpClient(), uri()).build();
         byte[] bytes = Flowable.fromPublisher(request.response((response, content) -> content))
-                .flatMap(chunk -> Flowable.generate((Emitter<Byte> emitter) -> {
-                    ByteBuffer buffer = chunk.buffer;
-                    if (buffer.hasRemaining()) {
-                        emitter.onNext(buffer.get());
-                    } else {
-                        chunk.callback.succeeded();
-                        emitter.onComplete();
-                    }
-                }))
-                .reduce(new ByteArrayOutputStream(), (acc, b) -> {
-                    acc.write(b);
-                    return acc;
+                .flatMap(chunk -> {
+                    chunk.retain();
+                    return Flowable.generate((Emitter<Byte> emitter) -> {
+                        ByteBuffer buffer = chunk.getByteBuffer();
+                        if (buffer.hasRemaining()) {
+                            emitter.onNext(buffer.get());
+                        } else {
+                            chunk.release();
+                            emitter.onComplete();
+                        }
+                    });
                 })
+                .reduce(new ByteArrayOutputStream(), (acc, b) -> {
+            acc.write(b);
+            return acc;
+        })
                 .map(ByteArrayOutputStream::toByteArray)
                 .blockingGet();
 
@@ -348,14 +332,14 @@ public class RxJava2Test extends AbstractTest {
         });
 
         ReactiveRequest request = ReactiveRequest.newBuilder(httpClient(), uri()).build();
-        Pair<ReactiveResponse, Publisher<ContentChunk>> pair = Single.fromPublisher(request.response((response, content) ->
+        Pair<ReactiveResponse, Publisher<Content.Chunk>> pair = Single.fromPublisher(request.response((response, content) ->
                 Flowable.just(new Pair<>(response, content)))).blockingGet();
-        ReactiveResponse response = pair._1;
+        ReactiveResponse response = pair.one;
 
         Assert.assertEquals(response.getStatus(), HttpStatus.OK_200);
 
         BufferingProcessor processor = new BufferingProcessor(response);
-        pair._2.subscribe(processor);
+        pair.two.subscribe(processor);
         String responseContent = Single.fromPublisher(processor).blockingGet();
 
         Assert.assertEquals(responseContent, pangram);
@@ -436,7 +420,7 @@ public class RxJava2Test extends AbstractTest {
                         // discard the content and emit the response.
                         Flowable.fromPublisher(content)
                                 .delaySubscription(delay, TimeUnit.MILLISECONDS)
-                                .doOnNext(chunk -> chunk.callback.succeeded())
+                                .doOnNext(Content.Chunk::release)
                                 .filter(chunk -> false)
                                 .isEmpty()
                                 .map(empty -> response)
@@ -493,6 +477,7 @@ public class RxJava2Test extends AbstractTest {
         Single.fromPublisher(request.response((response, content) -> {
             int status = response.getStatus();
             if (status != HttpStatus.OK_200) {
+                ReactiveResponse.Content.discard().apply(response, content);
                 return Flowable.error(new IOException(String.valueOf(status)));
             } else {
                 return ReactiveResponse.Content.asString().apply(response, content);
@@ -540,11 +525,12 @@ public class RxJava2Test extends AbstractTest {
         Publisher<BufferedResponse> bufRespPub = request.response((response, content) -> {
             BufferedResponse result = new BufferedResponse(response);
             if (response.getStatus() == HttpStatus.OK_200) {
-                Processor<ContentChunk, BufferedResponse> processor = new AbstractSingleProcessor<>() {
+                Processor<Content.Chunk, BufferedResponse> processor = new AbstractSingleProcessor<>() {
                     @Override
-                    public void onNext(ContentChunk chunk) {
+                    public void onNext(Content.Chunk chunk) {
                         // Accumulate the chunks, without consuming
                         // the buffers nor completing the callbacks.
+                        chunk.retain();
                         result.chunks.add(chunk);
                         upStreamRequest(1);
                     }
@@ -558,6 +544,7 @@ public class RxJava2Test extends AbstractTest {
                 content.subscribe(processor);
                 return processor;
             } else {
+                ReactiveResponse.Content.discard().apply(response, content);
                 return Flowable.just(result);
             }
         });
@@ -590,29 +577,18 @@ public class RxJava2Test extends AbstractTest {
         Assert.assertEquals(bufferedResponse.response.getStatus(), HttpStatus.OK_200);
         ByteBuffer content = ByteBuffer.allocate(content1.length + content2.length);
         bufferedResponse.chunks.forEach(chunk -> {
-            content.put(chunk.buffer);
-            chunk.callback.succeeded();
+            content.put(chunk.getByteBuffer());
+            chunk.release();
         });
         Assert.assertEquals(content.flip(), ByteBuffer.wrap(original));
     }
 
-    public static class Pair<X, Y> {
-        public final X _1;
-        public final Y _2;
-
-        public Pair(X x, Y y) {
-            _1 = x;
-            _2 = y;
-        }
+    private record Pair<X, Y>(X one, Y two) {
     }
 
-    public static class BufferedResponse {
-        private final List<ContentChunk> chunks = new ArrayList<>();
-        private final ReactiveResponse response;
-
-        public BufferedResponse(ReactiveResponse response) {
-            this.response = response;
+    private record BufferedResponse(ReactiveResponse response, List<Content.Chunk> chunks) {
+        private BufferedResponse(ReactiveResponse response) {
+            this(response, new ArrayList<>());
         }
     }
-
 }

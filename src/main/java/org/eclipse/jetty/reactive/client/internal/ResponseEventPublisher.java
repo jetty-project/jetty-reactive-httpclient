@@ -69,7 +69,9 @@ public class ResponseEventPublisher extends AbstractEventPublisher<ReactiveRespo
                         onFailure(response, chunk.getFailure());
                         return;
                     }
-                    emit(new ReactiveResponse.Event(ReactiveResponse.Event.Type.CONTENT, request.getReactiveResponse(), chunk.getByteBuffer()));
+                    if (chunk.hasRemaining()) {
+                        emit(new ReactiveResponse.Event(ReactiveResponse.Event.Type.CONTENT, request.getReactiveResponse(), chunk.getByteBuffer().asReadOnlyBuffer()));
+                    }
                     chunk.release();
                     if (chunk.isLast()) {
                         break;

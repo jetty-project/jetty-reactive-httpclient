@@ -17,17 +17,17 @@ package org.eclipse.jetty.reactive.client.internal;
 
 import java.util.Objects;
 
-import org.eclipse.jetty.reactive.client.ContentChunk;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.reactive.client.ReactiveRequest;
 import org.reactivestreams.Publisher;
 
 /**
  * A {@link ReactiveRequest.Content} that wraps a Publisher.
  */
-public class PublisherContent extends AbstractSingleProcessor<ContentChunk, ContentChunk> implements ReactiveRequest.Content {
+public class PublisherContent extends AbstractSingleProcessor<Content.Chunk, Content.Chunk> implements ReactiveRequest.Content {
     private final String contentType;
 
-    public PublisherContent(Publisher<ContentChunk> publisher, String contentType) {
+    public PublisherContent(Publisher<Content.Chunk> publisher, String contentType) {
         this.contentType = Objects.requireNonNull(contentType);
         publisher.subscribe(this);
     }
@@ -43,7 +43,7 @@ public class PublisherContent extends AbstractSingleProcessor<ContentChunk, Cont
     }
 
     @Override
-    public void onNext(ContentChunk chunk) {
+    public void onNext(Content.Chunk chunk) {
         downStreamOnNext(chunk);
     }
 }

@@ -19,15 +19,14 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Objects;
 
-import org.eclipse.jetty.reactive.client.ContentChunk;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.reactive.client.ReactiveRequest;
-import org.eclipse.jetty.util.Callback;
 import org.reactivestreams.Subscriber;
 
 /**
  * <p>Utility class that provides a String as reactive content.</p>
  */
-public class StringContent extends AbstractSinglePublisher<ContentChunk> implements ReactiveRequest.Content {
+public class StringContent extends AbstractSinglePublisher<Content.Chunk> implements ReactiveRequest.Content {
     private final String mediaType;
     private final Charset encoding;
     private final byte[] bytes;
@@ -50,10 +49,10 @@ public class StringContent extends AbstractSinglePublisher<ContentChunk> impleme
     }
 
     @Override
-    protected void onRequest(Subscriber<? super ContentChunk> subscriber, long n) {
+    protected void onRequest(Subscriber<? super Content.Chunk> subscriber, long n) {
         if (!complete) {
             complete = true;
-            subscriber.onNext(new ContentChunk(ByteBuffer.wrap(bytes), Callback.NOOP));
+            subscriber.onNext(Content.Chunk.from(ByteBuffer.wrap(bytes), true));
             subscriber.onComplete();
         }
     }
