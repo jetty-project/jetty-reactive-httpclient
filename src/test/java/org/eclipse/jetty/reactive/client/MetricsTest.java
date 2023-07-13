@@ -24,8 +24,11 @@ import java.util.stream.IntStream;
 
 import org.HdrHistogram.ConcurrentHistogram;
 import org.HdrHistogram.Histogram;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.toolchain.perf.HistogramSnapshot;
+import org.eclipse.jetty.util.Callback;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.testng.Assert;
@@ -40,7 +43,13 @@ public class MetricsTest extends AbstractTest {
 
     @Test
     public void testMetrics() throws Exception {
-        prepare(new EmptyHandler());
+        prepare(new Handler.Abstract() {
+            @Override
+            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception {
+                callback.succeeded();
+                return true;
+            }
+        });
 
         // Data structure to hold response status codes.
         Map<Integer, AtomicInteger> responses = new ConcurrentHashMap<>();

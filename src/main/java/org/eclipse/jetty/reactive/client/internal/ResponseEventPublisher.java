@@ -16,14 +16,13 @@
 package org.eclipse.jetty.reactive.client.internal;
 
 import java.nio.ByteBuffer;
-import java.util.function.LongConsumer;
 
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.reactive.client.ReactiveRequest;
 import org.eclipse.jetty.reactive.client.ReactiveResponse;
-import org.eclipse.jetty.util.Callback;
 
 public class ResponseEventPublisher extends AbstractEventPublisher<ReactiveResponse.Event> implements Response.Listener {
     private final ReactiveRequest request;
@@ -52,14 +51,33 @@ public class ResponseEventPublisher extends AbstractEventPublisher<ReactiveRespo
     }
 
     @Override
-    public void onContent(Response response, ByteBuffer content, Callback callback) {
+    public void onContent(Response response, Content.Chunk chunk, Runnable demander) {
     }
 
     @Override
-    public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback) {
-        emit(new ReactiveResponse.Event(ReactiveResponse.Event.Type.CONTENT, request.getReactiveResponse(), content));
-        callback.succeeded();
-        demand.accept(1);
+    public void onContentSource(Response response, Content.Source source) {
+        Runnable reader = new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    Content.Chunk chunk = source.read();
+                    if (chunk == null) {
+                        source.demand(this);
+                        return;
+                    }
+                    if (Content.Chunk.isFailure(chunk)) {
+                        onFailure(response, chunk.getFailure());
+                        return;
+                    }
+                    emit(new ReactiveResponse.Event(ReactiveResponse.Event.Type.CONTENT, request.getReactiveResponse(), chunk.getByteBuffer()));
+                    chunk.release();
+                    if (chunk.isLast()) {
+                        break;
+                    }
+                }
+            }
+        };
+        reader.run();
     }
 
     @Override

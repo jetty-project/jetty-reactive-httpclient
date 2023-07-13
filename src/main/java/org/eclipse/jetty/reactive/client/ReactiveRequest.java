@@ -20,7 +20,7 @@ import java.nio.charset.Charset;
 import java.util.function.BiFunction;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.reactive.client.internal.PublisherContent;
 import org.eclipse.jetty.reactive.client.internal.PublisherRequestContent;
 import org.eclipse.jetty.reactive.client.internal.RequestEventPublisher;
@@ -84,7 +84,7 @@ public class ReactiveRequest {
                 })
                 .onResponseBegin(responseEvents)
                 .onResponseHeaders(responseEvents)
-                .onResponseContentDemanded(responseEvents)
+                .onResponseContentSource(responseEvents)
                 .onResponseSuccess(responseEvents)
                 .onResponseFailure(responseEvents)
                 .onComplete(responseEvents);

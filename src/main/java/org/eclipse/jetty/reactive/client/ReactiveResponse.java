@@ -19,7 +19,7 @@ import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.function.BiFunction;
 
-import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.reactive.client.internal.BufferingProcessor;

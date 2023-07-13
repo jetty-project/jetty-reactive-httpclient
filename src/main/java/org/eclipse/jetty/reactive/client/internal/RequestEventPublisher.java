@@ -17,7 +17,7 @@ package org.eclipse.jetty.reactive.client.internal;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.reactive.client.ReactiveRequest;
 
 public class RequestEventPublisher extends AbstractEventPublisher<ReactiveRequest.Event> implements Request.Listener {

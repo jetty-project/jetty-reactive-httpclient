@@ -17,8 +17,6 @@ package org.eclipse.jetty.reactive.client;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InterruptedIOException;
-import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -30,26 +28,31 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+
 import io.reactivex.rxjava3.core.Emitter;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Single;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.reactive.client.internal.AbstractSingleProcessor;
 import org.eclipse.jetty.reactive.client.internal.BufferingProcessor;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IO;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.testng.Assert;
 import org.testng.annotations.Factory;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
 public class RxJava2Test extends AbstractTest {
@@ -60,7 +63,13 @@ public class RxJava2Test extends AbstractTest {
 
     @Test
     public void testSimpleUsage() throws Exception {
-        prepare(new EmptyHandler());
+        prepare(new Handler.Abstract() {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) {
+                callback.succeeded();
+                return true;
+            }
+        });
 
         ReactiveRequest request = ReactiveRequest.newBuilder(httpClient().newRequest(uri())).build();
         int status = Single.fromPublisher(request.response(ReactiveResponse.Content.discard()))
@@ -72,7 +81,14 @@ public class RxJava2Test extends AbstractTest {
 
     @Test
     public void testRequestEvents() throws Exception {
-        prepare(new EmptyHandler());
+        prepare(new Handler.Abstract() {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) {
+                callback.succeeded();
+                return true;
+            }
+
+        });
 
         ReactiveRequest request = ReactiveRequest.newBuilder(httpClient(), uri()).build();
         Publisher<ReactiveRequest.Event> events = request.requestEvents();
@@ -82,7 +98,7 @@ public class RxJava2Test extends AbstractTest {
         Flowable.fromPublisher(events)
                 .map(ReactiveRequest.Event::getType)
                 .map(ReactiveRequest.Event.Type::name)
-                .subscribe(new Subscriber<String>() {
+                .subscribe(new Subscriber<>() {
                     private Subscription subscription;
 
                     @Override
@@ -113,22 +129,24 @@ public class RxJava2Test extends AbstractTest {
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         List<String> expected = Stream.of(
-                ReactiveRequest.Event.Type.QUEUED,
-                ReactiveRequest.Event.Type.BEGIN,
-                ReactiveRequest.Event.Type.HEADERS,
-                ReactiveRequest.Event.Type.COMMIT,
-                ReactiveRequest.Event.Type.SUCCESS)
+                        ReactiveRequest.Event.Type.QUEUED,
+                        ReactiveRequest.Event.Type.BEGIN,
+                        ReactiveRequest.Event.Type.HEADERS,
+                        ReactiveRequest.Event.Type.COMMIT,
+                        ReactiveRequest.Event.Type.SUCCESS)
                 .map(Enum::name)
                 .collect(Collectors.toList());
         Assert.assertEquals(names, expected);
     }
 
     @Test
+    @Ignore("Restore when Jetty issue #10102 is released")
     public void testResponseEvents() throws Exception {
-        prepare(new EmptyHandler() {
+        prepare(new Handler.Abstract() {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
-                response.getOutputStream().write(0);
+            public boolean handle(Request request, Response response, Callback callback) {
+                response.write(true, ByteBuffer.wrap(new byte[]{0}), callback);
+                return true;
             }
         });
 
@@ -140,7 +158,7 @@ public class RxJava2Test extends AbstractTest {
         Flowable.fromPublisher(events)
                 .map(ReactiveResponse.Event::getType)
                 .map(ReactiveResponse.Event.Type::name)
-                .subscribe(new Subscriber<String>() {
+                .subscribe(new Subscriber<>() {
                     private Subscription subscription;
 
                     @Override
@@ -171,11 +189,11 @@ public class RxJava2Test extends AbstractTest {
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         List<String> expected = Stream.of(
-                ReactiveResponse.Event.Type.BEGIN,
-                ReactiveResponse.Event.Type.HEADERS,
-                ReactiveResponse.Event.Type.CONTENT,
-                ReactiveResponse.Event.Type.SUCCESS,
-                ReactiveResponse.Event.Type.COMPLETE)
+                        ReactiveResponse.Event.Type.BEGIN,
+                        ReactiveResponse.Event.Type.HEADERS,
+                        ReactiveResponse.Event.Type.CONTENT,
+                        ReactiveResponse.Event.Type.SUCCESS,
+                        ReactiveResponse.Event.Type.COMPLETE)
                 .map(Enum::name)
                 .collect(Collectors.toList());
         Assert.assertEquals(names, expected);
@@ -183,11 +201,15 @@ public class RxJava2Test extends AbstractTest {
 
     @Test
     public void testRequestBody() throws Exception {
-        prepare(new EmptyHandler() {
+        prepare(new Handler.Abstract() {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
-                response.setContentType(request.getContentType());
-                IO.copy(request.getInputStream(), response.getOutputStream());
+            public boolean handle(Request request, Response response, Callback callback) {
+                HttpField contentType = request.getHeaders().getField(HttpHeader.CONTENT_TYPE);
+                if (contentType != null) {
+                    response.getHeaders().put(contentType);
+                }
+                Content.copy(request, response, callback);
+                return true;
             }
         });
 
@@ -204,11 +226,15 @@ public class RxJava2Test extends AbstractTest {
 
     @Test
     public void testFlowableRequestBody() throws Exception {
-        prepare(new EmptyHandler() {
+        prepare(new Handler.Abstract() {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
-                response.setContentType(request.getContentType());
-                IO.copy(request.getInputStream(), response.getOutputStream());
+            public boolean handle(Request request, Response response, Callback callback) {
+                HttpField contentType = request.getHeaders().getField(HttpHeader.CONTENT_TYPE);
+                if (contentType != null) {
+                    response.getHeaders().put(contentType);
+                }
+                Content.copy(request, response, callback);
+                return true;
             }
         });
 
@@ -221,11 +247,11 @@ public class RxJava2Test extends AbstractTest {
         ByteBufferPool bufferPool = httpClient().getByteBufferPool();
         Flowable<ContentChunk> chunks = stream.map(item -> item.getBytes(charset))
                 .map(bytes -> {
-                    ByteBuffer buffer = bufferPool.acquire(bytes.length, true);
-                    BufferUtil.append(buffer, bytes, 0, bytes.length);
+                    RetainableByteBuffer buffer = bufferPool.acquire(bytes.length, true);
+                    BufferUtil.append(buffer.getByteBuffer(), bytes, 0, bytes.length);
                     return buffer;
                 })
-                .map(buffer -> new ContentChunk(buffer, new Callback() {
+                .map(buffer -> new ContentChunk(buffer.getByteBuffer(), new Callback() {
                     @Override
                     public void succeeded() {
                         complete();
@@ -242,7 +268,7 @@ public class RxJava2Test extends AbstractTest {
                     }
 
                     private void complete() {
-                        bufferPool.release(buffer);
+                        buffer.release();
                     }
                 }));
 
@@ -260,11 +286,12 @@ public class RxJava2Test extends AbstractTest {
     public void testResponseBody() throws Exception {
         Charset charset = StandardCharsets.UTF_16;
         String data = "\u20ac";
-        prepare(new EmptyHandler() {
+        prepare(new Handler.Abstract() {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
-                response.setContentType("text/plain;charset=" + charset.name());
-                response.getOutputStream().print(data);
+            public boolean handle(Request request, Response response, Callback callback) {
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + charset.name());
+                response.write(true, ByteBuffer.wrap(data.getBytes(charset)), callback);
+                return true;
             }
         });
 
@@ -279,10 +306,11 @@ public class RxJava2Test extends AbstractTest {
     public void testFlowableResponseBody() throws Exception {
         byte[] data = new byte[1024];
         new Random().nextBytes(data);
-        prepare(new EmptyHandler() {
+        prepare(new Handler.Abstract() {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
-                response.getOutputStream().write(data);
+            public boolean handle(Request request, Response response, Callback callback) {
+                response.write(true, ByteBuffer.wrap(data), callback);
+                return true;
             }
         });
 
@@ -310,11 +338,12 @@ public class RxJava2Test extends AbstractTest {
     @Test
     public void testFlowableResponseThenBody() throws Exception {
         String pangram = "quizzical twins proved my hijack bug fix";
-        prepare(new EmptyHandler() {
+        prepare(new Handler.Abstract() {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
-                response.setContentType("text/plain");
-                response.getOutputStream().print(pangram);
+            public boolean handle(Request request, Response response, Callback callback) {
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+                Content.Sink.write(response, true, pangram, callback);
+                return true;
             }
         });
 
@@ -336,18 +365,19 @@ public class RxJava2Test extends AbstractTest {
     public void testFlowableResponsePipedToRequest() throws Exception {
         String data1 = "data1";
         String data2 = "data2";
-        prepare(new EmptyHandler() {
+        prepare(new Handler.Abstract() {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
-                response.setContentType("text/plain");
-                PrintWriter writer = response.getWriter();
+            public boolean handle(Request request, Response response, Callback callback) throws Exception {
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+                String target = Request.getPathInContext(request);
                 if ("/1".equals(target)) {
-                    writer.write(data1);
+                    Content.Sink.write(response, true, data1, callback);
                 } else if ("/2".equals(target)) {
-                    if (IO.toString(request.getInputStream()).equals(data1)) {
-                        writer.write(data2);
+                    if (Content.Source.asString(request).equals(data1)) {
+                        Content.Sink.write(response, true, data2, callback);
                     }
                 }
+                return true;
             }
         });
 
@@ -365,14 +395,12 @@ public class RxJava2Test extends AbstractTest {
     @Test
     public void testFlowableTimeout() throws Exception {
         long timeout = 500;
-        prepare(new EmptyHandler() {
+        prepare(new Handler.Abstract() {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
-                try {
-                    Thread.sleep(timeout * 2);
-                } catch (InterruptedException e) {
-                    throw new InterruptedIOException();
-                }
+            public boolean handle(Request request, Response response, Callback callback) throws Exception {
+                Thread.sleep(timeout * 2);
+                callback.succeeded();
+                return true;
             }
         });
 
@@ -392,21 +420,27 @@ public class RxJava2Test extends AbstractTest {
 
     @Test
     public void testDelayedContentSubscriptionWithoutResponseContent() throws Exception {
-        prepare(new EmptyHandler());
+        prepare(new Handler.Abstract() {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) {
+                callback.succeeded();
+                return true;
+            }
+        });
 
         long delay = 1000;
         CountDownLatch latch = new CountDownLatch(1);
         ReactiveRequest request = ReactiveRequest.newBuilder(httpClient().newRequest(uri())).build();
         Single.fromPublisher(request.response((response, content) ->
-                // Subscribe to the content after a delay,
-                // discard the content and emit the response.
-                Flowable.fromPublisher(content)
-                        .delaySubscription(delay, TimeUnit.MILLISECONDS)
-                        .doOnNext(chunk -> chunk.callback.succeeded())
-                        .filter(chunk -> false)
-                        .isEmpty()
-                        .map(empty -> response)
-                        .toFlowable()))
+                        // Subscribe to the content after a delay,
+                        // discard the content and emit the response.
+                        Flowable.fromPublisher(content)
+                                .delaySubscription(delay, TimeUnit.MILLISECONDS)
+                                .doOnNext(chunk -> chunk.callback.succeeded())
+                                .filter(chunk -> false)
+                                .isEmpty()
+                                .map(empty -> response)
+                                .toFlowable()))
                 .subscribe(response -> latch.countDown());
 
         Assert.assertTrue(latch.await(delay * 2, TimeUnit.MILLISECONDS));
@@ -414,7 +448,13 @@ public class RxJava2Test extends AbstractTest {
 
     @Test
     public void testConnectTimeout() throws Exception {
-        prepare(new EmptyHandler());
+        prepare(new Handler.Abstract() {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) {
+                callback.succeeded();
+                return true;
+            }
+        });
         String uri = uri();
         server.stop();
 
@@ -437,17 +477,14 @@ public class RxJava2Test extends AbstractTest {
     public void testResponseContentTimeout() throws Exception {
         long timeout = 500;
         byte[] data = "hello".getBytes(StandardCharsets.UTF_8);
-        prepare(new EmptyHandler() {
+        prepare(new Handler.Abstract() {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
-                try {
-                    response.setContentLength(data.length);
-                    response.flushBuffer();
-                    Thread.sleep(timeout * 2);
-                    response.getOutputStream().write(data);
-                } catch (InterruptedException e) {
-                    throw new InterruptedIOException();
-                }
+            public boolean handle(Request request, Response response, Callback callback) throws Exception {
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, data.length);
+                response.write(false, null, Callback.NOOP);
+                Thread.sleep(timeout * 2);
+                response.write(true, ByteBuffer.wrap(data), callback);
+                return true;
             }
         });
 
@@ -480,19 +517,17 @@ public class RxJava2Test extends AbstractTest {
         System.arraycopy(content1, 0, original, 0, content1.length);
         System.arraycopy(content2, 0, original, content1.length, content2.length);
 
-        prepare(new EmptyHandler() {
+        prepare(new Handler.Abstract() {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
-                try {
-                    response.setContentLength(original.length);
-                    ServletOutputStream output = response.getOutputStream();
-                    output.write(content1);
-                    output.flush();
-                    Thread.sleep(500);
-                    output.write(content2);
-                } catch (InterruptedException e) {
-                    throw new InterruptedIOException();
+            public boolean handle(Request request, Response response, Callback callback) throws Exception {
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, original.length);
+                try (Blocker.Callback c = Blocker.callback()) {
+                    response.write(false, ByteBuffer.wrap(content1), c);
+                    c.block();
                 }
+                Thread.sleep(500);
+                response.write(true, ByteBuffer.wrap(content2), callback);
+                return true;
             }
         });
 
@@ -505,7 +540,7 @@ public class RxJava2Test extends AbstractTest {
         Publisher<BufferedResponse> bufRespPub = request.response((response, content) -> {
             BufferedResponse result = new BufferedResponse(response);
             if (response.getStatus() == HttpStatus.OK_200) {
-                Processor<ContentChunk, BufferedResponse> processor = new AbstractSingleProcessor<ContentChunk, BufferedResponse>() {
+                Processor<ContentChunk, BufferedResponse> processor = new AbstractSingleProcessor<>() {
                     @Override
                     public void onNext(ContentChunk chunk) {
                         // Accumulate the chunks, without consuming
@@ -529,7 +564,7 @@ public class RxJava2Test extends AbstractTest {
 
         AtomicReference<BufferedResponse> ref = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
-        bufRespPub.subscribe(new Subscriber<BufferedResponse>() {
+        bufRespPub.subscribe(new Subscriber<>() {
             @Override
             public void onSubscribe(Subscription subscription) {
                 subscription.request(1);

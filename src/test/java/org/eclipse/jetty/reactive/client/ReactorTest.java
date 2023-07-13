@@ -15,15 +15,18 @@
  */
 package org.eclipse.jetty.reactive.client;
 
-import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.TimeoutException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.springframework.http.client.reactive.JettyClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.testng.Assert;
@@ -42,10 +45,11 @@ public class ReactorTest extends AbstractTest {
     public void testResponseWithContent() throws Exception {
         byte[] data = new byte[1024];
         new Random().nextBytes(data);
-        prepare(new EmptyHandler() {
+        prepare(new Handler.Abstract() {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
-                response.getOutputStream().write(data);
+            public boolean handle(Request request, Response response, Callback callback) {
+                response.write(true, ByteBuffer.wrap(data), callback);
+                return true;
             }
         });
 
@@ -63,12 +67,13 @@ public class ReactorTest extends AbstractTest {
     public void testTotalTimeout() throws Exception {
         long timeout = 1000;
         String result = "HELLO";
-        prepare(new EmptyHandler() {
+        prepare(new Handler.Abstract() {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
+            public boolean handle(Request request, Response response, Callback callback) throws Exception {
                 try {
                     Thread.sleep(2 * timeout);
-                    response.getWriter().write(result);
+                    Content.Sink.write(response, true, result, callback);
+                    return true;
                 } catch (InterruptedException x) {
                     throw new InterruptedIOException();
                 }

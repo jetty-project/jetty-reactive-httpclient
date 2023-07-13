@@ -16,21 +16,17 @@
 package org.eclipse.jetty.reactive.client.internal;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
-import java.util.function.LongConsumer;
 
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.reactive.client.ContentChunk;
 import org.eclipse.jetty.reactive.client.ReactiveRequest;
 import org.eclipse.jetty.reactive.client.ReactiveResponse;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -96,24 +92,19 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
     }
 
     @Override
-    public void onBeforeContent(Response response, LongConsumer demand) {
-        content.accept(demand);
-    }
-
-    @Override
     public void onContent(Response response, ByteBuffer content) {
     }
 
     @Override
-    public void onContent(Response response, ByteBuffer buffer, Callback callback) {
+    public void onContent(Response response, Content.Chunk chunk, Runnable demander) {
     }
 
     @Override
-    public void onContent(Response response, LongConsumer demand, ByteBuffer buffer, Callback callback) {
+    public void onContentSource(Response response, Content.Source source) {
         if (logger.isDebugEnabled()) {
-            logger.debug("received response chunk {} {} on {}", response, BufferUtil.toSummaryString(buffer), this);
+            logger.debug("received response content source {} {} on {}", response, source, this);
         }
-        content.offer(demand, new ContentChunk(buffer, callback));
+        content.accept(source);
     }
 
     @Override
@@ -182,47 +173,65 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
         return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), request);
     }
 
+    /**
+     * <p>Publishes response {@link ContentChunk} to application code.</p>
+     */
     private static class ContentPublisher extends QueuedSinglePublisher<ContentChunk> {
-        private final Map<ContentChunk, LongConsumer> chunks = new ConcurrentHashMap<>();
-        private long initialDemand;
-        private LongConsumer upstreamDemand;
+        private boolean initialDemand;
+        private Content.Source source;
 
-        public void offer(LongConsumer demand, ContentChunk chunk) {
-            chunks.put(chunk, demand);
-            super.offer(chunk);
-        }
-
-        private void accept(LongConsumer consumer) {
-            long demand;
+        private void accept(Content.Source contentSource) {
+            boolean demand;
             try (AutoLock ignored = lock()) {
-                upstreamDemand = consumer;
+                source = contentSource;
                 demand = initialDemand;
-                initialDemand = 0;
             }
-            consumer.accept(demand);
+            if (demand) {
+                contentSource.demand(() -> read(contentSource));
+            }
         }
 
         @Override
         protected void onRequest(Subscriber<? super ContentChunk> subscriber, long n) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("demand {} on {}", n, this);
+            }
             super.onRequest(subscriber, n);
-            LongConsumer demand;
+            Content.Source content;
             try (AutoLock ignored = lock()) {
-                demand = upstreamDemand;
-                if (demand == null) {
-                    initialDemand = MathUtils.cappedAdd(initialDemand, n);
+                content = source;
+                if (content == null) {
+                    initialDemand = true;
                 }
             }
-            if (demand != null) {
-                demand.accept(n);
+            if (content != null) {
+                content.demand(() -> read(content));
             }
         }
 
-        @Override
-        protected void onNext(Subscriber<? super ContentChunk> subscriber, ContentChunk item) {
-            try (AutoLock ignored = lock()) {
-                upstreamDemand = chunks.remove(item);
+        private void read(Content.Source source) {
+            Content.Chunk chunk = source.read();
+            if (logger.isDebugEnabled()) {
+                logger.debug("read {} from {} on {}", chunk, source, this);
             }
-            super.onNext(subscriber, item);
+            if (chunk == null) {
+                source.demand(() -> read(source));
+                return;
+            }
+            if (Content.Chunk.isFailure(chunk)) {
+                fail(chunk.getFailure());
+                return;
+            }
+            if (chunk.hasRemaining()) {
+                offer(new ContentChunk(chunk.getByteBuffer(), new Callback.Completing() {
+                    @Override
+                    public void completed() {
+                        chunk.release();
+                    }
+                }));
+            } else {
+                chunk.release();
+            }
         }
     }
 }

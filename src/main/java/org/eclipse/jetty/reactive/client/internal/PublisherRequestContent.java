@@ -15,15 +15,15 @@
  */
 package org.eclipse.jetty.reactive.client.internal;
 
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.util.AsyncRequestContent;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.io.content.AsyncContent;
 import org.eclipse.jetty.reactive.client.ContentChunk;
 import org.eclipse.jetty.reactive.client.ReactiveRequest;
 import org.eclipse.jetty.reactive.client.ReactiveRequest.Content;
 import org.eclipse.jetty.util.Callback;
 
 public class PublisherRequestContent implements Request.Content, org.reactivestreams.Subscriber<ContentChunk> {
-    private final AsyncRequestContent asyncContent = new AsyncRequestContent();
+    private final AsyncContent asyncContent = new AsyncContent();
     private final ReactiveRequest.Content reactiveContent;
     private org.reactivestreams.Subscription subscription;
 
@@ -38,18 +38,23 @@ public class PublisherRequestContent implements Request.Content, org.reactivestr
     }
 
     @Override
-    public String getContentType() {
-        return reactiveContent.getContentType();
+    public org.eclipse.jetty.io.Content.Chunk read() {
+        return asyncContent.read();
     }
 
     @Override
-    public Subscription subscribe(Consumer consumer, boolean emitInitialContent) {
-        return asyncContent.subscribe(consumer, emitInitialContent);
+    public void demand(Runnable runnable) {
+        asyncContent.demand(runnable);
     }
 
     @Override
     public void fail(Throwable failure) {
         onError(failure);
+    }
+
+    @Override
+    public String getContentType() {
+        return reactiveContent.getContentType();
     }
 
     @Override
@@ -60,7 +65,7 @@ public class PublisherRequestContent implements Request.Content, org.reactivestr
 
     @Override
     public void onNext(ContentChunk chunk) {
-        asyncContent.offer(chunk.buffer, new Callback.Nested(chunk.callback) {
+        asyncContent.write(false, chunk.buffer, new Callback.Nested(chunk.callback) {
             @Override
             public void succeeded() {
                 super.succeeded();

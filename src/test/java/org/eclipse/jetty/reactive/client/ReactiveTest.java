@@ -20,6 +20,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -35,13 +38,19 @@ public class ReactiveTest extends AbstractTest {
 
     @Test
     public void testSimpleReactiveUsage() throws Exception {
-        prepare(new EmptyHandler());
+        prepare(new Handler.Abstract() {
+            @Override
+            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback) {
+                callback.succeeded();
+                return true;
+            }
+        });
 
         Publisher<ReactiveResponse> publisher = ReactiveRequest.newBuilder(httpClient(), uri()).build().response();
 
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<ReactiveResponse> responseRef = new AtomicReference<>();
-        publisher.subscribe(new Subscriber<ReactiveResponse>() {
+        publisher.subscribe(new Subscriber<>() {
             @Override
             public void onSubscribe(Subscription subscription) {
                 subscription.request(1);
