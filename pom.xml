@@ -108,7 +108,7 @@
                   <version>[17,)</version>
                 </requireJavaVersion>
                 <requireMavenVersion>
-                  <version>3.9.0</version>
+                  <version>3.8.0</version>
                 </requireMavenVersion>
               </rules>
             </configuration>
