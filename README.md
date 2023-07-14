@@ -4,15 +4,16 @@
 
 A [ReactiveStreams](http://www.reactive-streams.org/) wrapper around 
 [Jetty](https://eclipse.org/jetty)'s 
-[HttpClient](https://www.eclipse.org/jetty/documentation/jetty-11/programming-guide/index.html#pg-client-http).
+[HttpClient](https://www.eclipse.org/jetty/documentation/jetty-10/programming-guide/index.html#pg-client-http).
 
 ## Versions
 
-Jetty ReactiveStream HttpClient Versions | Min Java Version | Jetty Version | Status |
----- | ---- | ---- | ----
-`1.1.x` | Java 8 | Jetty 9.4.x | End of Community Support (see [#153](https://github.com/jetty-project/jetty-reactive-httpclient/issues/153))
-`2.0.x` | Java 11 | Jetty 10.0.x | Stable
-`3.0.x` | Java 11 | Jetty 11.0.x | Stable
+| Jetty ReactiveStream HttpClient Versions | Min Java Version | Jetty Version | Status                                                                                                       |
+|------------------------------------------|------------------|---------------|--------------------------------------------------------------------------------------------------------------|
+| `4.0.x`                                  | Java 17          | Jetty 12.0.x  | Beta                                                                                                         |
+| `3.0.x`                                  | Java 11          | Jetty 11.0.x  | Stable                                                                                                       |
+| `2.0.x`                                  | Java 11          | Jetty 10.0.x  | Stable                                                                                                       |
+| `1.1.x`                                  | Java 8           | Jetty 9.4.x   | End of Community Support (see [#153](https://github.com/jetty-project/jetty-reactive-httpclient/issues/153)) |
 
 ## Usage
 
@@ -193,10 +194,18 @@ Publisher<ReactiveRequest.Event> requestEvents = request.requestEvents();
 
 // Subscribe to the request events before sending the request.
 requestEvents.subscribe(new Subscriber<ReactiveRequest.Event>() {
-    ...
+...
+});
+
+// Similarly for response events.
+Publisher<ReactiveResponse.Event> responseEvents = request.responseEvents();
+
+// Subscribe to the response events before sending the request.
+responseEvents.subscribe(new Subscriber<ReactiveResponse.Event>() {
+...
 });
 
 // Send the request.
 ReactiveResponse response = Single.fromPublisher(request.response(ReactiveResponse.Content.discard()))
-        .blockingGet();
+.blockingGet();
 ```
