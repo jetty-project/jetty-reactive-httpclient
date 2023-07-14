@@ -8,11 +8,12 @@ A [ReactiveStreams](http://www.reactive-streams.org/) wrapper around
 
 ## Versions
 
-Jetty ReactiveStream HttpClient Versions | Min Java Version | Jetty Version | Status |
----- | ---- | ---- | ----
-`1.1.x` | Java 8 | Jetty 9.4.x | End of Community Support (see [#153](https://github.com/jetty-project/jetty-reactive-httpclient/issues/153))
-`2.0.x` | Java 11 | Jetty 10.0.x | Stable
-`3.0.x` | Java 11 | Jetty 11.0.x | Stable
+| Jetty ReactiveStream HttpClient Versions | Min Java Version | Jetty Version | Status                                                                                                       |
+|------------------------------------------|------------------|---------------|--------------------------------------------------------------------------------------------------------------|
+| `4.0.x`                                  | Java 17          | Jetty 12.0.x  | Beta                                                                                                         |
+| `3.0.x`                                  | Java 11          | Jetty 11.0.x  | Stable                                                                                                       |
+| `2.0.x`                                  | Java 11          | Jetty 10.0.x  | Stable                                                                                                       |
+| `1.1.x`                                  | Java 8           | Jetty 9.4.x   | End of Community Support (see [#153](https://github.com/jetty-project/jetty-reactive-httpclient/issues/153)) |
 
 ## Usage
 
