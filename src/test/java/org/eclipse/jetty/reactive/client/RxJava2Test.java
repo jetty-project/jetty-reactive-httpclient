@@ -297,18 +297,15 @@ public class RxJava2Test extends AbstractTest {
 
         ReactiveRequest request = ReactiveRequest.newBuilder(httpClient(), uri()).build();
         byte[] bytes = Flowable.fromPublisher(request.response((response, content) -> content))
-                .flatMap(chunk -> {
-                    chunk.retain();
-                    return Flowable.generate((Emitter<Byte> emitter) -> {
-                        ByteBuffer buffer = chunk.getByteBuffer();
-                        if (buffer.hasRemaining()) {
-                            emitter.onNext(buffer.get());
-                        } else {
-                            chunk.release();
-                            emitter.onComplete();
-                        }
-                    });
-                })
+                .flatMap(chunk -> Flowable.generate((Emitter<Byte> emitter) -> {
+                    ByteBuffer buffer = chunk.getByteBuffer();
+                    if (buffer.hasRemaining()) {
+                        emitter.onNext(buffer.get());
+                    } else {
+                        chunk.release();
+                        emitter.onComplete();
+                    }
+                }))
                 .reduce(new ByteArrayOutputStream(), (acc, b) -> {
             acc.write(b);
             return acc;
@@ -530,7 +527,6 @@ public class RxJava2Test extends AbstractTest {
                     public void onNext(Content.Chunk chunk) {
                         // Accumulate the chunks, without consuming
                         // the buffers nor completing the callbacks.
-                        chunk.retain();
                         result.chunks.add(chunk);
                         upStreamRequest(1);
                     }

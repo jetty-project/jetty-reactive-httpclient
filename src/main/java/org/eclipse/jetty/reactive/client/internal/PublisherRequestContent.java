@@ -65,7 +65,6 @@ public class PublisherRequestContent implements Request.Content, Subscriber<Cont
 
     @Override
     public void onNext(Content.Chunk chunk) {
-        chunk.retain();
         asyncContent.write(chunk.isLast(), chunk.getByteBuffer(), Callback.from(chunk::release,
                 Callback.from(() -> subscription.request(1), x -> subscription.cancel())));
     }

@@ -120,10 +120,14 @@ public class ReactiveRequest {
     /**
      * <p>Creates a Publisher that sends the request when a Subscriber requests the response
      * via {@link Subscription#request(long)}, processing the response content with the given
-     * function.</p>
+     * {@code BiFunction}.</p>
+     * <p>The given {@code BiFunction} is called by the implementation when the response arrives,
+     * with the {@link ReactiveResponse} and the response content Publisher as parameters.</p>
      * <p>Applications must subscribe (possibly asynchronously) to the response content Publisher,
      * even if it is known that the response has no content, to receive the response success/failure
      * events.</p>
+     * <p>The response content Publisher emits {@link Chunk} objects that must be eventually
+     * released (possibly asynchronously at a later time) by calling {@link Chunk#release()}.</p>
      *
      * @param contentFn the function that processes the response content
      * @param <T>       the element type of the processed response content
@@ -302,10 +306,27 @@ public class ReactiveRequest {
             return new StringContent(string, mediaType, charset);
         }
 
+        /**
+         * <p>Creates a Content from the given Publisher of {@link Chunk}s.</p>
+         * <p>The implementation will call {@link Chunk#release()} on each {@link Chunk}.</p>
+         *
+         * @param publisher the request content {@link Chunk}s
+         * @param contentType the request content type
+         * @return a Content wrapping the given {@link Chunk}s
+         */
         public static Content fromPublisher(Publisher<Chunk> publisher, String contentType) {
             return new PublisherContent(publisher, contentType);
         }
 
+        /**
+         * <p>Creates a Content from the given Publisher of {@link Chunk}s.</p>
+         * <p>The implementation will call {@link Chunk#release()} on each {@link Chunk}.</p>
+         *
+         * @param publisher the request content {@link Chunk}s
+         * @param mediaType the request content media type
+         * @param charset the request content charset
+         * @return a Content wrapping the given {@link Chunk}s
+         */
         public static Content fromPublisher(Publisher<Chunk> publisher, String mediaType, Charset charset) {
             return fromPublisher(publisher, mediaType + ";charset=" + charset.name());
         }

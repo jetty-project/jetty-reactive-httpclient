@@ -33,7 +33,6 @@ public class BufferingProcessor extends AbstractSingleProcessor<Content.Chunk, S
 
     @Override
     public void onNext(Content.Chunk chunk) {
-        chunk.retain();
         chunks.add(chunk);
         upStreamRequest(1);
     }

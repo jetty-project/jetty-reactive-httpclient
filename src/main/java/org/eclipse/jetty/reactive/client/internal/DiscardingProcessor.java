@@ -27,6 +27,7 @@ public class DiscardingProcessor extends AbstractSingleProcessor<Content.Chunk, 
 
     @Override
     public void onNext(Content.Chunk chunk) {
+        chunk.release();
         upStreamRequest(1);
     }
 

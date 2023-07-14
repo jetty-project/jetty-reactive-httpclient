@@ -185,7 +185,7 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
                 demand = initialDemand;
             }
             if (demand) {
-                contentSource.demand(() -> read(contentSource));
+                read(contentSource);
             }
         }
 
@@ -203,7 +203,7 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
                 }
             }
             if (content != null) {
-                content.demand(() -> read(content));
+                read(content);
             }
         }
 
@@ -221,9 +221,13 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
                 return;
             }
             if (chunk.hasRemaining()) {
-                offer(chunk);
+                try {
+                    offer(chunk);
+                } catch (Throwable x) {
+                    chunk.release();
+                    fail(x);
+                }
             }
-            chunk.release();
         }
     }
 }
