@@ -105,7 +105,7 @@ ReactiveStreams library, such as RxJava 2 (which provides class `Flowable`):
 #### Example: discarding non 200 OK response content
 
 ```java
-Publisher<ContentChunk> publisher = reactiveRequest.response((reactiveResponse, contentPublisher) -> {
+Publisher<Content.Chunk> publisher = reactiveRequest.response((reactiveResponse, contentPublisher) -> {
     if (reactiveResponse.getStatus() == HttpStatus.OK_200) {
         // Return the response content itself.
         return contentPublisher;
@@ -114,7 +114,7 @@ Publisher<ContentChunk> publisher = reactiveRequest.response((reactiveResponse, 
         return Flowable.fromPublisher(contentPublisher)
                 .filter(chunk -> {
                     // Tell HttpClient that you are done with this chunk.
-                    chunk.callback.succeeded();
+                    chunk.release();
                     // Discard this chunk.
                     return false;
                 });
@@ -128,9 +128,9 @@ Then the response content (if any) can be further processed:
 Single<Long> contentLength = Flowable.fromPublisher(publisher)
         .map(chunk -> {
             // Tell HttpClient that you are done with this chunk.
-            chunk.callback.succeeded();
+            chunk.release();
             // Return the number of bytes of this chunk.
-            return chunk.buffer.remaining();
+            return chunk.remaining();
         })
         // Sum the bytes of the chunks.
         .reduce(0L, Long::sum);
@@ -163,11 +163,11 @@ Publisher<T> publisher = ...;
 
 // Transform items of type T into ByteBuffer chunks.
 Charset charset = StandardCharsets.UTF_8;
-Flowable<ContentChunk> chunks = Flowable.fromPublisher(publisher)
+Flowable<Content.Chunk> chunks = Flowable.fromPublisher(publisher)
         .map((T t) -> toJSON(t))
         .map((String json) -> json.getBytes(charset))
         .map((byte[] bytes) -> ByteBuffer.wrap(bytes))
-        .map(ContentChunk::new);
+        .map(byteBuffer -> Content.Chunk.from(byteBuffer, false));
 
 ReactiveRequest request = ReactiveRequest.newBuilder(httpClient, "http://localhost:8080/path")
         .content(ReactiveRequest.Content.fromPublisher(chunks, "application/json", charset))
@@ -193,6 +193,14 @@ Publisher<ReactiveRequest.Event> requestEvents = request.requestEvents();
 
 // Subscribe to the request events before sending the request.
 requestEvents.subscribe(new Subscriber<ReactiveRequest.Event>() {
+    ...
+});
+
+// Similarly for response events.
+Publisher<ReactiveResponse.Event> responseEvents = request.responseEvents();
+
+// Subscribe to the response events before sending the request.
+responseEvents.subscribe(new Subscriber<ReactiveResponse.Event>() {
     ...
 });
 
