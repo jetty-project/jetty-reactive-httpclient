@@ -37,6 +37,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 
 public class AbstractTest {
+    public static void printTestName(TestInfo testInfo) {
+        System.err.printf("Running %s%n", testInfo.getTestMethod()
+                .map(m -> "%s.%s() %s".formatted(m.getDeclaringClass().getSimpleName(), m.getName(), testInfo.getDisplayName()))
+                .orElseThrow());
+    }
+
     public static List<String> protocols() {
         return List.of("http", "h2c");
     }
@@ -47,8 +53,8 @@ public class AbstractTest {
     private ServerConnector connector;
 
     @BeforeEach
-    public void printTestName(TestInfo testInfo) {
-        System.err.printf("Running %s.%s()%n", getClass().getName(), testInfo.getDisplayName());
+    public void before(TestInfo testInfo) {
+        printTestName(testInfo);
     }
 
     public void prepare(String protocol, Handler handler) throws Exception {

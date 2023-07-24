@@ -15,6 +15,7 @@
  */
 package org.eclipse.jetty.reactive.client.internal;
 
+import org.eclipse.jetty.reactive.client.AbstractTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.reactivestreams.Publisher;
@@ -27,8 +28,8 @@ public class QueuedSinglePublisherTCKTest extends PublisherVerification<String> 
     }
 
     @BeforeEach
-    public void printTestName(TestInfo testInfo) {
-        System.err.printf("Running %s.%s()%n", getClass().getName(), testInfo.getDisplayName());
+    public void before(TestInfo testInfo) {
+        AbstractTest.printTestName(testInfo);
     }
 
     @Override

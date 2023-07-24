@@ -19,6 +19,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.reactive.client.AbstractTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -30,8 +31,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class QueuedSinglePublisherTest {
     @BeforeEach
-    public void printTestName(TestInfo testInfo) {
-        System.err.printf("Running %s.%s()%n", getClass().getName(), testInfo.getDisplayName());
+    public void before(TestInfo testInfo) {
+        AbstractTest.printTestName(testInfo);
     }
 
     @Test

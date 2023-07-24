@@ -18,6 +18,7 @@ package org.eclipse.jetty.reactive.client.internal;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.reactive.client.AbstractTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.reactivestreams.Publisher;
@@ -30,8 +31,8 @@ public class StringContentTCKTest extends PublisherVerification<Content.Chunk> {
     }
 
     @BeforeEach
-    public void printTestName(TestInfo testInfo) {
-        System.err.printf("Running %s.%s()%n", getClass().getName(), testInfo.getDisplayName());
+    public void before(TestInfo testInfo) {
+        AbstractTest.printTestName(testInfo);
     }
 
     @Override

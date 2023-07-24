@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import io.reactivex.rxjava3.core.Flowable;
+import org.eclipse.jetty.reactive.client.AbstractTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -34,8 +35,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SingleProcessorTest {
     @BeforeEach
-    public void printTestName(TestInfo testInfo) {
-        System.err.printf("Running %s.%s()%n", getClass().getName(), testInfo.getDisplayName());
+    public void before(TestInfo testInfo) {
+        AbstractTest.printTestName(testInfo);
     }
 
     @Test
