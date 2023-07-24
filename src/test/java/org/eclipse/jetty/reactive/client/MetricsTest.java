@@ -29,23 +29,20 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.toolchain.perf.HistogramSnapshot;
 import org.eclipse.jetty.util.Callback;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import org.testng.Assert;
-import org.testng.annotations.Factory;
-import org.testng.annotations.Test;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MetricsTest extends AbstractTest {
-    @Factory(dataProvider = "protocols", dataProviderClass = AbstractTest.class)
-    public MetricsTest(String protocol) {
-        super(protocol);
-    }
-
-    @Test
-    public void testMetrics() throws Exception {
-        prepare(new Handler.Abstract() {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testMetrics(String protocol) throws Exception {
+        prepare(protocol, new Handler.Abstract() {
             @Override
-            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception {
+            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback) {
                 callback.succeeded();
                 return true;
             }
@@ -110,7 +107,7 @@ public class MetricsTest extends AbstractTest {
                 });
 
         // Wait for all the responses to arrive.
-        Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+        assertTrue(latch.await(10, TimeUnit.SECONDS));
 
         System.err.println("responses = " + responses);
 

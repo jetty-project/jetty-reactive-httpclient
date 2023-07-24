@@ -27,25 +27,23 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.http.client.reactive.JettyClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.testng.Assert;
-import org.testng.annotations.Factory;
-import org.testng.annotations.Ignore;
-import org.testng.annotations.Test;
 
-@Ignore("Spring WebFlux is only compatible with Jetty 9.4.x")
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+@Disabled("Spring WebFlux is only compatible with Jetty 9.4.x")
 public class ReactorTest extends AbstractTest {
-    @Factory(dataProvider = "protocols", dataProviderClass = AbstractTest.class)
-    public ReactorTest(String protocol) {
-        super(protocol);
-    }
-
-    @Test
-    public void testResponseWithContent() throws Exception {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testResponseWithContent(String protocol) throws Exception {
         byte[] data = new byte[1024];
         new Random().nextBytes(data);
-        prepare(new Handler.Abstract() {
+        prepare(protocol, new Handler.Abstract() {
             @Override
             public boolean handle(Request request, Response response, Callback callback) {
                 response.write(true, ByteBuffer.wrap(data), callback);
@@ -59,15 +57,16 @@ public class ReactorTest extends AbstractTest {
                 .retrieve()
                 .bodyToMono(byte[].class)
                 .block();
-        Assert.assertNotNull(responseContent);
-        Assert.assertEquals(data, responseContent);
+        assertNotNull(responseContent);
+        assertEquals(data, responseContent);
     }
 
-    @Test
-    public void testTotalTimeout() throws Exception {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testTotalTimeout(String protocol) throws Exception {
         long timeout = 1000;
         String result = "HELLO";
-        prepare(new Handler.Abstract() {
+        prepare(protocol, new Handler.Abstract() {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception {
                 try {
@@ -92,6 +91,6 @@ public class ReactorTest extends AbstractTest {
                 .onErrorReturn(TimeoutException.class::isInstance, timeoutResult)
                 .block();
 
-        Assert.assertEquals(timeoutResult, responseContent);
+        assertEquals(timeoutResult, responseContent);
     }
 }

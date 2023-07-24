@@ -15,7 +15,6 @@
  */
 package org.eclipse.jetty.reactive.client.internal;
 
-import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
@@ -23,20 +22,21 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.eclipse.jetty.io.Content;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.IdentityProcessorVerification;
 import org.reactivestreams.tck.TestEnvironment;
-import org.testng.annotations.BeforeMethod;
 
 public class SingleProcessorTCKTest extends IdentityProcessorVerification<Content.Chunk> {
     public SingleProcessorTCKTest() {
         super(new TestEnvironment());
     }
 
-    @BeforeMethod
-    public void printTestName(Method method) {
-        System.err.printf("Running %s.%s()%n", getClass().getName(), method.getName());
+    @BeforeEach
+    public void printTestName(TestInfo testInfo) {
+        System.err.printf("Running %s.%s()%n", getClass().getName(), testInfo.getDisplayName());
     }
 
     @Override

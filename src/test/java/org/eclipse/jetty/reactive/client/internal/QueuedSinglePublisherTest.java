@@ -15,21 +15,23 @@
  */
 package org.eclipse.jetty.reactive.client.internal;
 
-import java.lang.reflect.Method;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class QueuedSinglePublisherTest {
-    @BeforeMethod
-    public void printTestName(Method method) {
-        System.err.printf("Running %s.%s()%n", getClass().getName(), method.getName());
+    @BeforeEach
+    public void printTestName(TestInfo testInfo) {
+        System.err.printf("Running %s.%s()%n", getClass().getName(), testInfo.getDisplayName());
     }
 
     @Test
@@ -38,7 +40,7 @@ public class QueuedSinglePublisherTest {
 
         CountDownLatch latch = new CountDownLatch(1);
         AtomicInteger next = new AtomicInteger();
-        publisher.subscribe(new Subscriber<Runnable>() {
+        publisher.subscribe(new Subscriber<>() {
             @Override
             public void onSubscribe(Subscription subscription) {
                 subscription.request(1);
@@ -65,7 +67,7 @@ public class QueuedSinglePublisherTest {
         // We offer a Runnable that will call complete().
         publisher.offer(publisher::complete);
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -74,7 +76,7 @@ public class QueuedSinglePublisherTest {
 
         CountDownLatch latch = new CountDownLatch(1);
         AtomicInteger next = new AtomicInteger();
-        publisher.subscribe(new Subscriber<Runnable>() {
+        publisher.subscribe(new Subscriber<>() {
             @Override
             public void onSubscribe(Subscription subscription) {
                 subscription.request(1);
@@ -101,15 +103,15 @@ public class QueuedSinglePublisherTest {
         // We offer a Runnable that will call complete().
         publisher.offer(() -> publisher.fail(new Exception()));
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @Test(expectedExceptions = IllegalStateException.class)
+    @Test
     public void testOfferAfterComplete() {
         QueuedSinglePublisher<Runnable> publisher = new QueuedSinglePublisher<>();
         publisher.offer(() -> {});
         publisher.complete();
-        publisher.offer(() -> {});
+        assertThrows(IllegalStateException.class, () -> publisher.offer(() -> {}));
     }
 
     @Test
@@ -117,7 +119,7 @@ public class QueuedSinglePublisherTest {
         QueuedSinglePublisher<Runnable> publisher = new QueuedSinglePublisher<>();
 
         CountDownLatch latch = new CountDownLatch(1);
-        publisher.subscribe(new Subscriber<Runnable>() {
+        publisher.subscribe(new Subscriber<>() {
             @Override
             public void onSubscribe(Subscription subscription) {
             }
@@ -138,7 +140,7 @@ public class QueuedSinglePublisherTest {
 
         publisher.complete();
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -147,7 +149,7 @@ public class QueuedSinglePublisherTest {
 
         CountDownLatch nextLatch = new CountDownLatch(1);
         CountDownLatch completeLatch = new CountDownLatch(1);
-        publisher.subscribe(new Subscriber<Runnable>() {
+        publisher.subscribe(new Subscriber<>() {
             @Override
             public void onSubscribe(Subscription subscription) {
                 subscription.request(1);
@@ -169,9 +171,9 @@ public class QueuedSinglePublisherTest {
         });
 
         publisher.offer(() -> {});
-        Assert.assertTrue(nextLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(nextLatch.await(5, TimeUnit.SECONDS));
 
         publisher.complete();
-        Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
     }
 }

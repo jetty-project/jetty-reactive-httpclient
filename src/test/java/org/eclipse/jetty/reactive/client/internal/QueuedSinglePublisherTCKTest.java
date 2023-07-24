@@ -15,21 +15,20 @@
  */
 package org.eclipse.jetty.reactive.client.internal;
 
-import java.lang.reflect.Method;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;
-import org.testng.annotations.BeforeMethod;
 
 public class QueuedSinglePublisherTCKTest extends PublisherVerification<String> {
     public QueuedSinglePublisherTCKTest() {
         super(new TestEnvironment());
     }
 
-    @BeforeMethod
-    public void printTestName(Method method) {
-        System.err.printf("Running %s.%s()%n", getClass().getName(), method.getName());
+    @BeforeEach
+    public void printTestName(TestInfo testInfo) {
+        System.err.printf("Running %s.%s()%n", getClass().getName(), testInfo.getDisplayName());
     }
 
     @Override

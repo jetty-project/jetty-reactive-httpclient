@@ -351,6 +351,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <version>${jetty-version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.hdrhistogram</groupId>
       <artifactId>HdrHistogram</artifactId>
       <version>2.1.12</version>
@@ -363,21 +369,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j2-impl</artifactId>
-      <version>${log4j2-version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-      <version>${log4j2-version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.testng</groupId>
-      <artifactId>testng</artifactId>
-      <version>7.8.0</version>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.10.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

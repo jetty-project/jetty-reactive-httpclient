@@ -46,24 +46,22 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import org.testng.Assert;
-import org.testng.annotations.Factory;
-import org.testng.annotations.Ignore;
-import org.testng.annotations.Test;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RxJava2Test extends AbstractTest {
-    @Factory(dataProvider = "protocols", dataProviderClass = AbstractTest.class)
-    public RxJava2Test(String protocol) {
-        super(protocol);
-    }
-
-    @Test
-    public void testSimpleUsage() throws Exception {
-        prepare(new Handler.Abstract() {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testSimpleUsage(String protocol) throws Exception {
+        prepare(protocol, new Handler.Abstract() {
             @Override
             public boolean handle(Request request, Response response, Callback callback) {
                 callback.succeeded();
@@ -76,12 +74,13 @@ public class RxJava2Test extends AbstractTest {
                 .map(ReactiveResponse::getStatus)
                 .blockingGet();
 
-        Assert.assertEquals(status, HttpStatus.OK_200);
+        assertEquals(status, HttpStatus.OK_200);
     }
 
-    @Test
-    public void testRequestEvents() throws Exception {
-        prepare(new Handler.Abstract() {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testRequestEvents(String protocol) throws Exception {
+        prepare(protocol, new Handler.Abstract() {
             @Override
             public boolean handle(Request request, Response response, Callback callback) {
                 callback.succeeded();
@@ -125,8 +124,8 @@ public class RxJava2Test extends AbstractTest {
 
         ReactiveResponse response = Single.fromPublisher(request.response()).blockingGet();
 
-        Assert.assertEquals(response.getStatus(), HttpStatus.OK_200);
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertEquals(response.getStatus(), HttpStatus.OK_200);
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         List<String> expected = Stream.of(
                         ReactiveRequest.Event.Type.QUEUED,
@@ -136,13 +135,13 @@ public class RxJava2Test extends AbstractTest {
                         ReactiveRequest.Event.Type.SUCCESS)
                 .map(Enum::name)
                 .collect(Collectors.toList());
-        Assert.assertEquals(names, expected);
+        assertEquals(names, expected);
     }
 
-    @Test
-    @Ignore("Restore when Jetty issue #10102 is released")
-    public void testResponseEvents() throws Exception {
-        prepare(new Handler.Abstract() {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testResponseEvents(String protocol) throws Exception {
+        prepare(protocol, new Handler.Abstract() {
             @Override
             public boolean handle(Request request, Response response, Callback callback) {
                 response.write(true, ByteBuffer.wrap(new byte[]{0}), callback);
@@ -185,8 +184,8 @@ public class RxJava2Test extends AbstractTest {
 
         ReactiveResponse response = Single.fromPublisher(request.response()).blockingGet();
 
-        Assert.assertEquals(response.getStatus(), HttpStatus.OK_200);
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertEquals(response.getStatus(), HttpStatus.OK_200);
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         List<String> expected = Stream.of(
                         ReactiveResponse.Event.Type.BEGIN,
@@ -196,12 +195,13 @@ public class RxJava2Test extends AbstractTest {
                         ReactiveResponse.Event.Type.COMPLETE)
                 .map(Enum::name)
                 .collect(Collectors.toList());
-        Assert.assertEquals(names, expected);
+        assertEquals(names, expected);
     }
 
-    @Test
-    public void testRequestBody() throws Exception {
-        prepare(new Handler.Abstract() {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testRequestBody(String protocol) throws Exception {
+        prepare(protocol, new Handler.Abstract() {
             @Override
             public boolean handle(Request request, Response response, Callback callback) {
                 HttpField contentType = request.getHeaders().getField(HttpHeader.CONTENT_TYPE);
@@ -221,12 +221,13 @@ public class RxJava2Test extends AbstractTest {
         String content = Single.fromPublisher(request.response(ReactiveResponse.Content.asString()))
                 .blockingGet();
 
-        Assert.assertEquals(content, text);
+        assertEquals(content, text);
     }
 
-    @Test
-    public void testFlowableRequestBody() throws Exception {
-        prepare(new Handler.Abstract() {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testFlowableRequestBody(String protocol) throws Exception {
+        prepare(protocol, new Handler.Abstract() {
             @Override
             public boolean handle(Request request, Response response, Callback callback) {
                 HttpField contentType = request.getHeaders().getField(HttpHeader.CONTENT_TYPE);
@@ -260,14 +261,15 @@ public class RxJava2Test extends AbstractTest {
         String content = Single.fromPublisher(request.response(ReactiveResponse.Content.asString()))
                 .blockingGet();
 
-        Assert.assertEquals(content, data);
+        assertEquals(content, data);
     }
 
-    @Test
-    public void testResponseBody() throws Exception {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testResponseBody(String protocol) throws Exception {
         Charset charset = StandardCharsets.UTF_16;
         String data = "\u20ac";
-        prepare(new Handler.Abstract() {
+        prepare(protocol, new Handler.Abstract() {
             @Override
             public boolean handle(Request request, Response response, Callback callback) {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + charset.name());
@@ -280,14 +282,15 @@ public class RxJava2Test extends AbstractTest {
         String text = Single.fromPublisher(request.response(ReactiveResponse.Content.asString()))
                 .blockingGet();
 
-        Assert.assertEquals(text, data);
+        assertEquals(text, data);
     }
 
-    @Test
-    public void testFlowableResponseBody() throws Exception {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testFlowableResponseBody(String protocol) throws Exception {
         byte[] data = new byte[1024];
         new Random().nextBytes(data);
-        prepare(new Handler.Abstract() {
+        prepare(protocol, new Handler.Abstract() {
             @Override
             public boolean handle(Request request, Response response, Callback callback) {
                 response.write(true, ByteBuffer.wrap(data), callback);
@@ -313,13 +316,14 @@ public class RxJava2Test extends AbstractTest {
                 .map(ByteArrayOutputStream::toByteArray)
                 .blockingGet();
 
-        Assert.assertEquals(bytes, data);
+        assertArrayEquals(bytes, data);
     }
 
-    @Test
-    public void testFlowableResponseThenBody() throws Exception {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testFlowableResponseThenBody(String protocol) throws Exception {
         String pangram = "quizzical twins proved my hijack bug fix";
-        prepare(new Handler.Abstract() {
+        prepare(protocol, new Handler.Abstract() {
             @Override
             public boolean handle(Request request, Response response, Callback callback) {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
@@ -333,20 +337,21 @@ public class RxJava2Test extends AbstractTest {
                 Flowable.just(new Pair<>(response, content)))).blockingGet();
         ReactiveResponse response = pair.one;
 
-        Assert.assertEquals(response.getStatus(), HttpStatus.OK_200);
+        assertEquals(response.getStatus(), HttpStatus.OK_200);
 
         BufferingProcessor processor = new BufferingProcessor(response);
         pair.two.subscribe(processor);
         String responseContent = Single.fromPublisher(processor).blockingGet();
 
-        Assert.assertEquals(responseContent, pangram);
+        assertEquals(responseContent, pangram);
     }
 
-    @Test
-    public void testFlowableResponsePipedToRequest() throws Exception {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testFlowableResponsePipedToRequest(String protocol) throws Exception {
         String data1 = "data1";
         String data2 = "data2";
-        prepare(new Handler.Abstract() {
+        prepare(protocol, new Handler.Abstract() {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
@@ -370,13 +375,14 @@ public class RxJava2Test extends AbstractTest {
         });
         String result = Single.fromPublisher(sender1).blockingGet();
 
-        Assert.assertEquals(result, data2);
+        assertEquals(result, data2);
     }
 
-    @Test
-    public void testFlowableTimeout() throws Exception {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testFlowableTimeout(String protocol) throws Exception {
         long timeout = 500;
-        prepare(new Handler.Abstract() {
+        prepare(protocol, new Handler.Abstract() {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception {
                 Thread.sleep(timeout * 2);
@@ -396,12 +402,13 @@ public class RxJava2Test extends AbstractTest {
                     }
                 });
 
-        Assert.assertTrue(latch.await(timeout * 2, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(timeout * 2, TimeUnit.MILLISECONDS));
     }
 
-    @Test
-    public void testDelayedContentSubscriptionWithoutResponseContent() throws Exception {
-        prepare(new Handler.Abstract() {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testDelayedContentSubscriptionWithoutResponseContent(String protocol) throws Exception {
+        prepare(protocol, new Handler.Abstract() {
             @Override
             public boolean handle(Request request, Response response, Callback callback) {
                 callback.succeeded();
@@ -424,12 +431,13 @@ public class RxJava2Test extends AbstractTest {
                                 .toFlowable()))
                 .subscribe(response -> latch.countDown());
 
-        Assert.assertTrue(latch.await(delay * 2, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(delay * 2, TimeUnit.MILLISECONDS));
     }
 
-    @Test
-    public void testConnectTimeout() throws Exception {
-        prepare(new Handler.Abstract() {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testConnectTimeout(String protocol) throws Exception {
+        prepare(protocol, new Handler.Abstract() {
             @Override
             public boolean handle(Request request, Response response, Callback callback) {
                 callback.succeeded();
@@ -451,14 +459,15 @@ public class RxJava2Test extends AbstractTest {
                     }
                 });
 
-        Assert.assertTrue(latch.await(connectTimeout * 2, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(connectTimeout * 2, TimeUnit.MILLISECONDS));
     }
 
-    @Test
-    public void testResponseContentTimeout() throws Exception {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testResponseContentTimeout(String protocol) throws Exception {
         long timeout = 500;
         byte[] data = "hello".getBytes(StandardCharsets.UTF_8);
-        prepare(new Handler.Abstract() {
+        prepare(protocol, new Handler.Abstract() {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception {
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, data.length);
@@ -485,11 +494,12 @@ public class RxJava2Test extends AbstractTest {
             }
         });
 
-        Assert.assertTrue(latch.await(timeout * 2, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(timeout * 2, TimeUnit.MILLISECONDS));
     }
 
-    @Test
-    public void testBufferedResponseContent() throws Exception {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testBufferedResponseContent(String protocol) throws Exception {
         Random random = new Random();
         byte[] content1 = new byte[1024];
         random.nextBytes(content1);
@@ -499,7 +509,7 @@ public class RxJava2Test extends AbstractTest {
         System.arraycopy(content1, 0, original, 0, content1.length);
         System.arraycopy(content2, 0, original, content1.length, content2.length);
 
-        prepare(new Handler.Abstract() {
+        prepare(protocol, new Handler.Abstract() {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception {
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, original.length);
@@ -568,15 +578,15 @@ public class RxJava2Test extends AbstractTest {
             }
         });
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
         BufferedResponse bufferedResponse = ref.get();
-        Assert.assertEquals(bufferedResponse.response.getStatus(), HttpStatus.OK_200);
+        assertEquals(bufferedResponse.response.getStatus(), HttpStatus.OK_200);
         ByteBuffer content = ByteBuffer.allocate(content1.length + content2.length);
         bufferedResponse.chunks.forEach(chunk -> {
             content.put(chunk.getByteBuffer());
             chunk.release();
         });
-        Assert.assertEquals(content.flip(), ByteBuffer.wrap(original));
+        assertEquals(content.flip(), ByteBuffer.wrap(original));
     }
 
     private record Pair<X, Y>(X one, Y two) {

@@ -24,22 +24,21 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import org.testng.Assert;
-import org.testng.annotations.Factory;
-import org.testng.annotations.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ReactiveTest extends AbstractTest {
-    @Factory(dataProvider = "protocols", dataProviderClass = AbstractTest.class)
-    public ReactiveTest(String protocol) {
-        super(protocol);
-    }
-
-    @Test
-    public void testSimpleReactiveUsage() throws Exception {
-        prepare(new Handler.Abstract() {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testSimpleReactiveUsage(String protocol) throws Exception {
+        prepare(protocol, new Handler.Abstract() {
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback) {
                 Content.Sink.write(response, true, "hello world", callback);
@@ -72,9 +71,9 @@ public class ReactiveTest extends AbstractTest {
             }
         });
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
         ReactiveResponse response = responseRef.get();
-        Assert.assertNotNull(response);
-        Assert.assertEquals(response.getStatus(), HttpStatus.OK_200);
+        assertNotNull(response);
+        assertEquals(response.getStatus(), HttpStatus.OK_200);
     }
 }
