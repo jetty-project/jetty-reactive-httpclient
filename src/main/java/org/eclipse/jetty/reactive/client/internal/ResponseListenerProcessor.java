@@ -15,13 +15,11 @@
  */
 package org.eclipse.jetty.reactive.client.internal;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.CancellationException;
 import java.util.function.BiFunction;
 
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.reactive.client.ReactiveRequest;
 import org.eclipse.jetty.reactive.client.ReactiveResponse;
@@ -71,15 +69,6 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
     }
 
     @Override
-    public void onBegin(Response response) {
-    }
-
-    @Override
-    public boolean onHeader(Response response, HttpField field) {
-        return true;
-    }
-
-    @Override
     public void onHeaders(Response response) {
         if (logger.isDebugEnabled()) {
             logger.debug("received response headers {} on {}", response, this);
@@ -87,14 +76,6 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
         responseReceived = true;
         Publisher<T> publisher = contentFn.apply(request.getReactiveResponse(), content);
         publisher.subscribe(this);
-    }
-
-    @Override
-    public void onContent(Response response, ByteBuffer content) {
-    }
-
-    @Override
-    public void onContent(Response response, Content.Chunk chunk, Runnable demander) {
     }
 
     @Override
@@ -174,58 +155,68 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
     /**
      * <p>Publishes response {@link Content.Chunk}s to application code.</p>
      */
-    private static class ContentPublisher extends QueuedSinglePublisher<Content.Chunk> {
-        private boolean initialDemand;
-        private Content.Source source;
+    private static class ContentPublisher extends QueuedSinglePublisher<Content.Chunk> implements Runnable {
+        private volatile Content.Source contentSource;
 
-        private void accept(Content.Source contentSource) {
-            boolean demand;
-            try (AutoLock ignored = lock()) {
-                source = contentSource;
-                demand = initialDemand;
-            }
-            if (demand) {
-                read(contentSource);
-            }
+        private void accept(Content.Source source) {
+            contentSource = source;
+            tryProduce(this);
         }
 
         @Override
         protected void onRequest(Subscriber<? super Content.Chunk> subscriber, long n) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("demand {} on {}", n, this);
-            }
             super.onRequest(subscriber, n);
-            Content.Source content;
-            try (AutoLock ignored = lock()) {
-                content = source;
-                if (content == null) {
-                    initialDemand = true;
-                }
-            }
-            if (content != null) {
-                read(content);
+
+            // This method is called by:
+            // 1) An application thread, in case of asynchronous demand => resume production.
+            // 2) A producer thread, from onNext() + request() => must not resume production.
+
+            tryProduce(this);
+        }
+
+        @Override
+        public void run() {
+            Content.Source source = contentSource;
+            if (source != null) {
+                read(source);
             }
         }
 
         private void read(Content.Source source) {
-            Content.Chunk chunk = source.read();
-            if (logger.isDebugEnabled()) {
-                logger.debug("read {} from {} on {}", chunk, source, this);
-            }
-            if (chunk == null) {
-                source.demand(() -> read(source));
-                return;
-            }
-            if (Content.Chunk.isFailure(chunk)) {
-                fail(chunk.getFailure());
-                return;
-            }
-            if (chunk.hasRemaining()) {
-                try {
-                    offer(chunk);
-                } catch (Throwable x) {
+            while (true) {
+                if (!hasDemand()) {
+                    return;
+                }
+
+                Content.Chunk chunk = source.read();
+                if (logger.isDebugEnabled()) {
+                    logger.debug("read {} from {} on {}", chunk, source, this);
+                }
+
+                if (chunk == null) {
+                    source.demand(this);
+                    return;
+                }
+
+                if (Content.Chunk.isFailure(chunk)) {
+                    fail(chunk.getFailure());
+                    return;
+                }
+
+                if (chunk.hasRemaining()) {
+                    try {
+                        offer(chunk);
+                    } catch (Throwable x) {
+                        chunk.release();
+                        fail(x);
+                        return;
+                    }
+                } else {
                     chunk.release();
-                    fail(x);
+                }
+
+                if (chunk.isLast()) {
+                    return;
                 }
             }
         }

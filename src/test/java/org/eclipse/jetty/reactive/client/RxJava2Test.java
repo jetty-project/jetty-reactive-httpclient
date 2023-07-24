@@ -18,6 +18,7 @@ package org.eclipse.jetty.reactive.client;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -46,6 +47,8 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.reactivestreams.Processor;
@@ -58,6 +61,33 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RxJava2Test extends AbstractTest {
+    @Test
+    @Tag("external")
+    public void testExternalServer() throws Exception {
+        prepare("http", new Handler.Abstract() {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) {
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        CountDownLatch contentLatch = new CountDownLatch(1);
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient().newRequest("https://example.org")).build();
+        Flowable.fromPublisher(request.response((reactiveResponse, chunkPublisher) -> Flowable.fromPublisher(chunkPublisher)
+                .map(chunk -> {
+                    ByteBuffer byteBuffer = chunk.getByteBuffer();
+                    CharBuffer charBuffer = StandardCharsets.UTF_8.decode(byteBuffer);
+                    chunk.release();
+                    return charBuffer.toString();
+                }).doOnComplete(contentLatch::countDown)))
+                .doOnComplete(responseLatch::countDown)
+                .subscribe();
+
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+    }
+
     @ParameterizedTest
     @MethodSource("protocols")
     public void testSimpleUsage(String protocol) throws Exception {
@@ -310,9 +340,9 @@ public class RxJava2Test extends AbstractTest {
                     }
                 }))
                 .reduce(new ByteArrayOutputStream(), (acc, b) -> {
-            acc.write(b);
-            return acc;
-        })
+                    acc.write(b);
+                    return acc;
+                })
                 .map(ByteArrayOutputStream::toByteArray)
                 .blockingGet();
 

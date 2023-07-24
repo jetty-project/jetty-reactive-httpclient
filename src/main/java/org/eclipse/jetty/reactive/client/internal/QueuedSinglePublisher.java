@@ -56,6 +56,27 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
         return process(new Failure<>(failure));
     }
 
+    protected void tryProduce(Runnable producer) {
+        boolean produce;
+        try (AutoLock ignored = lock()) {
+            produce = demand > 0 && stalled;
+        }
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("producing {} on {}", produce, this);
+        }
+
+        if (produce) {
+            producer.run();
+        }
+    }
+
+    public boolean hasDemand() {
+        try (AutoLock ignored = lock()) {
+            return demand > 0;
+        }
+    }
+
     @Override
     protected void onRequest(Subscriber<? super T> subscriber, long n) {
         boolean proceed = false;
@@ -66,6 +87,11 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
                 proceed = true;
             }
         }
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("demand {}, proceeding {} on {}", n, proceed, this);
+        }
+
         if (proceed) {
             proceed(subscriber);
         }
