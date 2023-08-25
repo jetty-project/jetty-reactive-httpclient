@@ -44,35 +44,35 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import org.testng.Assert;
-import org.testng.annotations.Factory;
-import org.testng.annotations.Test;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RxJava2Test extends AbstractTest {
-    @Factory(dataProvider = "protocols", dataProviderClass = AbstractTest.class)
-    public RxJava2Test(String protocol) {
-        super(protocol);
-    }
-
-    @Test
-    public void testSimpleUsage() throws Exception {
-        prepare(new EmptyHandler());
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testSimpleUsage(String protocol) throws Exception {
+        prepare(protocol, new EmptyHandler());
 
         ReactiveRequest request = ReactiveRequest.newBuilder(httpClient().newRequest(uri())).build();
         int status = Single.fromPublisher(request.response(ReactiveResponse.Content.discard()))
                 .map(ReactiveResponse::getStatus)
                 .blockingGet();
 
-        Assert.assertEquals(status, HttpStatus.OK_200);
+        assertEquals(status, HttpStatus.OK_200);
     }
 
-    @Test
-    public void testRequestEvents() throws Exception {
-        prepare(new EmptyHandler());
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testRequestEvents(String protocol) throws Exception {
+        prepare(protocol, new EmptyHandler());
 
         ReactiveRequest request = ReactiveRequest.newBuilder(httpClient(), uri()).build();
         Publisher<ReactiveRequest.Event> events = request.requestEvents();
@@ -82,7 +82,7 @@ public class RxJava2Test extends AbstractTest {
         Flowable.fromPublisher(events)
                 .map(ReactiveRequest.Event::getType)
                 .map(ReactiveRequest.Event.Type::name)
-                .subscribe(new Subscriber<String>() {
+                .subscribe(new Subscriber<>() {
                     private Subscription subscription;
 
                     @Override
@@ -109,8 +109,8 @@ public class RxJava2Test extends AbstractTest {
 
         ReactiveResponse response = Single.fromPublisher(request.response()).blockingGet();
 
-        Assert.assertEquals(response.getStatus(), HttpStatus.OK_200);
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertEquals(response.getStatus(), HttpStatus.OK_200);
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         List<String> expected = Stream.of(
                 ReactiveRequest.Event.Type.QUEUED,
@@ -120,12 +120,13 @@ public class RxJava2Test extends AbstractTest {
                 ReactiveRequest.Event.Type.SUCCESS)
                 .map(Enum::name)
                 .collect(Collectors.toList());
-        Assert.assertEquals(names, expected);
+        assertEquals(names, expected);
     }
 
-    @Test
-    public void testResponseEvents() throws Exception {
-        prepare(new EmptyHandler() {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testResponseEvents(String protocol) throws Exception {
+        prepare(protocol, new EmptyHandler() {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
                 response.getOutputStream().write(0);
@@ -140,7 +141,7 @@ public class RxJava2Test extends AbstractTest {
         Flowable.fromPublisher(events)
                 .map(ReactiveResponse.Event::getType)
                 .map(ReactiveResponse.Event.Type::name)
-                .subscribe(new Subscriber<String>() {
+                .subscribe(new Subscriber<>() {
                     private Subscription subscription;
 
                     @Override
@@ -167,8 +168,8 @@ public class RxJava2Test extends AbstractTest {
 
         ReactiveResponse response = Single.fromPublisher(request.response()).blockingGet();
 
-        Assert.assertEquals(response.getStatus(), HttpStatus.OK_200);
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertEquals(response.getStatus(), HttpStatus.OK_200);
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         List<String> expected = Stream.of(
                 ReactiveResponse.Event.Type.BEGIN,
@@ -178,12 +179,13 @@ public class RxJava2Test extends AbstractTest {
                 ReactiveResponse.Event.Type.COMPLETE)
                 .map(Enum::name)
                 .collect(Collectors.toList());
-        Assert.assertEquals(names, expected);
+        assertEquals(names, expected);
     }
 
-    @Test
-    public void testRequestBody() throws Exception {
-        prepare(new EmptyHandler() {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testRequestBody(String protocol) throws Exception {
+        prepare(protocol, new EmptyHandler() {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
                 response.setContentType(request.getContentType());
@@ -199,12 +201,13 @@ public class RxJava2Test extends AbstractTest {
         String content = Single.fromPublisher(request.response(ReactiveResponse.Content.asString()))
                 .blockingGet();
 
-        Assert.assertEquals(content, text);
+        assertEquals(content, text);
     }
 
-    @Test
-    public void testFlowableRequestBody() throws Exception {
-        prepare(new EmptyHandler() {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testFlowableRequestBody(String protocol) throws Exception {
+        prepare(protocol, new EmptyHandler() {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
                 response.setContentType(request.getContentType());
@@ -253,14 +256,15 @@ public class RxJava2Test extends AbstractTest {
         String content = Single.fromPublisher(request.response(ReactiveResponse.Content.asString()))
                 .blockingGet();
 
-        Assert.assertEquals(content, data);
+        assertEquals(content, data);
     }
 
-    @Test
-    public void testResponseBody() throws Exception {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testResponseBody(String protocol) throws Exception {
         Charset charset = StandardCharsets.UTF_16;
         String data = "\u20ac";
-        prepare(new EmptyHandler() {
+        prepare(protocol, new EmptyHandler() {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
                 response.setContentType("text/plain;charset=" + charset.name());
@@ -272,14 +276,15 @@ public class RxJava2Test extends AbstractTest {
         String text = Single.fromPublisher(request.response(ReactiveResponse.Content.asString()))
                 .blockingGet();
 
-        Assert.assertEquals(text, data);
+        assertEquals(text, data);
     }
 
-    @Test
-    public void testFlowableResponseBody() throws Exception {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testFlowableResponseBody(String protocol) throws Exception {
         byte[] data = new byte[1024];
         new Random().nextBytes(data);
-        prepare(new EmptyHandler() {
+        prepare(protocol, new EmptyHandler() {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
                 response.getOutputStream().write(data);
@@ -304,13 +309,14 @@ public class RxJava2Test extends AbstractTest {
                 .map(ByteArrayOutputStream::toByteArray)
                 .blockingGet();
 
-        Assert.assertEquals(bytes, data);
+        assertArrayEquals(bytes, data);
     }
 
-    @Test
-    public void testFlowableResponseThenBody() throws Exception {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testFlowableResponseThenBody(String protocol) throws Exception {
         String pangram = "quizzical twins proved my hijack bug fix";
-        prepare(new EmptyHandler() {
+        prepare(protocol, new EmptyHandler() {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
                 response.setContentType("text/plain");
@@ -323,20 +329,21 @@ public class RxJava2Test extends AbstractTest {
                 Flowable.just(new Pair<>(response, content)))).blockingGet();
         ReactiveResponse response = pair._1;
 
-        Assert.assertEquals(response.getStatus(), HttpStatus.OK_200);
+        assertEquals(response.getStatus(), HttpStatus.OK_200);
 
         BufferingProcessor processor = new BufferingProcessor(response);
         pair._2.subscribe(processor);
         String responseContent = Single.fromPublisher(processor).blockingGet();
 
-        Assert.assertEquals(responseContent, pangram);
+        assertEquals(responseContent, pangram);
     }
 
-    @Test
-    public void testFlowableResponsePipedToRequest() throws Exception {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testFlowableResponsePipedToRequest(String protocol) throws Exception {
         String data1 = "data1";
         String data2 = "data2";
-        prepare(new EmptyHandler() {
+        prepare(protocol, new EmptyHandler() {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
                 response.setContentType("text/plain");
@@ -359,13 +366,14 @@ public class RxJava2Test extends AbstractTest {
         });
         String result = Single.fromPublisher(sender1).blockingGet();
 
-        Assert.assertEquals(result, data2);
+        assertEquals(result, data2);
     }
 
-    @Test
-    public void testFlowableTimeout() throws Exception {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testFlowableTimeout(String protocol) throws Exception {
         long timeout = 500;
-        prepare(new EmptyHandler() {
+        prepare(protocol, new EmptyHandler() {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
                 try {
@@ -387,12 +395,13 @@ public class RxJava2Test extends AbstractTest {
                     }
                 });
 
-        Assert.assertTrue(latch.await(timeout * 2, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(timeout * 2, TimeUnit.MILLISECONDS));
     }
 
-    @Test
-    public void testDelayedContentSubscriptionWithoutResponseContent() throws Exception {
-        prepare(new EmptyHandler());
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testDelayedContentSubscriptionWithoutResponseContent(String protocol) throws Exception {
+        prepare(protocol, new EmptyHandler());
 
         long delay = 1000;
         CountDownLatch latch = new CountDownLatch(1);
@@ -409,12 +418,13 @@ public class RxJava2Test extends AbstractTest {
                         .toFlowable()))
                 .subscribe(response -> latch.countDown());
 
-        Assert.assertTrue(latch.await(delay * 2, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(delay * 2, TimeUnit.MILLISECONDS));
     }
 
-    @Test
-    public void testConnectTimeout() throws Exception {
-        prepare(new EmptyHandler());
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testConnectTimeout(String protocol) throws Exception {
+        prepare(protocol, new EmptyHandler());
         String uri = uri();
         server.stop();
 
@@ -430,14 +440,15 @@ public class RxJava2Test extends AbstractTest {
                     }
                 });
 
-        Assert.assertTrue(latch.await(connectTimeout * 2, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(connectTimeout * 2, TimeUnit.MILLISECONDS));
     }
 
-    @Test
-    public void testResponseContentTimeout() throws Exception {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testResponseContentTimeout(String protocol) throws Exception {
         long timeout = 500;
         byte[] data = "hello".getBytes(StandardCharsets.UTF_8);
-        prepare(new EmptyHandler() {
+        prepare(protocol, new EmptyHandler() {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
                 try {
@@ -466,11 +477,12 @@ public class RxJava2Test extends AbstractTest {
             }
         });
 
-        Assert.assertTrue(latch.await(timeout * 2, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(timeout * 2, TimeUnit.MILLISECONDS));
     }
 
-    @Test
-    public void testBufferedResponseContent() throws Exception {
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testBufferedResponseContent(String protocol) throws Exception {
         Random random = new Random();
         byte[] content1 = new byte[1024];
         random.nextBytes(content1);
@@ -480,7 +492,7 @@ public class RxJava2Test extends AbstractTest {
         System.arraycopy(content1, 0, original, 0, content1.length);
         System.arraycopy(content2, 0, original, content1.length, content2.length);
 
-        prepare(new EmptyHandler() {
+        prepare(protocol, new EmptyHandler() {
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
                 try {
@@ -505,7 +517,7 @@ public class RxJava2Test extends AbstractTest {
         Publisher<BufferedResponse> bufRespPub = request.response((response, content) -> {
             BufferedResponse result = new BufferedResponse(response);
             if (response.getStatus() == HttpStatus.OK_200) {
-                Processor<ContentChunk, BufferedResponse> processor = new AbstractSingleProcessor<ContentChunk, BufferedResponse>() {
+                Processor<ContentChunk, BufferedResponse> processor = new AbstractSingleProcessor<>() {
                     @Override
                     public void onNext(ContentChunk chunk) {
                         // Accumulate the chunks, without consuming
@@ -523,13 +535,14 @@ public class RxJava2Test extends AbstractTest {
                 content.subscribe(processor);
                 return processor;
             } else {
+                ReactiveResponse.Content.discard().apply(response, content);
                 return Flowable.just(result);
             }
         });
 
         AtomicReference<BufferedResponse> ref = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
-        bufRespPub.subscribe(new Subscriber<BufferedResponse>() {
+        bufRespPub.subscribe(new Subscriber<>() {
             @Override
             public void onSubscribe(Subscription subscription) {
                 subscription.request(1);
@@ -550,15 +563,15 @@ public class RxJava2Test extends AbstractTest {
             }
         });
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
         BufferedResponse bufferedResponse = ref.get();
-        Assert.assertEquals(bufferedResponse.response.getStatus(), HttpStatus.OK_200);
+        assertEquals(bufferedResponse.response.getStatus(), HttpStatus.OK_200);
         ByteBuffer content = ByteBuffer.allocate(content1.length + content2.length);
         bufferedResponse.chunks.forEach(chunk -> {
             content.put(chunk.buffer);
             chunk.callback.succeeded();
         });
-        Assert.assertEquals(content.flip(), ByteBuffer.wrap(original));
+        assertEquals(content.flip(), ByteBuffer.wrap(original));
     }
 
     public static class Pair<X, Y> {
@@ -579,5 +592,4 @@ public class RxJava2Test extends AbstractTest {
             this.response = response;
         }
     }
-
 }

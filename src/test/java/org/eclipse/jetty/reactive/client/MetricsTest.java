@@ -26,21 +26,18 @@ import org.HdrHistogram.ConcurrentHistogram;
 import org.HdrHistogram.Histogram;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.toolchain.perf.HistogramSnapshot;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import org.testng.Assert;
-import org.testng.annotations.Factory;
-import org.testng.annotations.Test;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MetricsTest extends AbstractTest {
-    @Factory(dataProvider = "protocols", dataProviderClass = AbstractTest.class)
-    public MetricsTest(String protocol) {
-        super(protocol);
-    }
-
-    @Test
-    public void testMetrics() throws Exception {
-        prepare(new EmptyHandler());
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testMetrics(String protocol) throws Exception {
+        prepare(protocol, new EmptyHandler());
 
         // Data structure to hold response status codes.
         Map<Integer, AtomicInteger> responses = new ConcurrentHashMap<>();
@@ -101,7 +98,7 @@ public class MetricsTest extends AbstractTest {
                 });
 
         // Wait for all the responses to arrive.
-        Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+        assertTrue(latch.await(10, TimeUnit.SECONDS));
 
         System.err.println("responses = " + responses);
 

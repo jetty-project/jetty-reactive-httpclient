@@ -15,23 +15,24 @@
  */
 package org.eclipse.jetty.reactive.client.internal;
 
-import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 
+import org.eclipse.jetty.reactive.client.AbstractTest;
 import org.eclipse.jetty.reactive.client.ContentChunk;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;
-import org.testng.annotations.BeforeMethod;
 
 public class StringContentTCKTest extends PublisherVerification<ContentChunk> {
     public StringContentTCKTest() {
         super(new TestEnvironment());
     }
 
-    @BeforeMethod
-    public void printTestName(Method method) {
-        System.err.printf("Running %s.%s()%n", getClass().getName(), method.getName());
+    @BeforeEach
+    public void before(TestInfo testInfo) {
+        AbstractTest.printTestName(testInfo);
     }
 
     @Override

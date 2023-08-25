@@ -15,7 +15,7 @@
  */
 package org.eclipse.jetty.reactive.client;
 
-import java.lang.reflect.Method;
+import java.util.List;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -30,36 +30,34 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
 
 public class AbstractTest {
-    @DataProvider(name = "protocols")
-    public static Object[][] protocols() {
-        return new Object[][]{
-                new Object[]{"http"},
-                new Object[]{"h2c"}
-        };
+    public static void printTestName(TestInfo testInfo) {
+        System.err.printf("Running %s%n", testInfo.getTestMethod()
+                .map(m -> String.format("%s.%s() %s", m.getDeclaringClass().getSimpleName(), m.getName(), testInfo.getDisplayName()))
+                .orElseThrow());
+    }
+
+    public static List<String> protocols() {
+        return List.of("http", "h2c");
     }
 
     private final HttpConfiguration httpConfiguration = new HttpConfiguration();
-    private final String protocol;
     private HttpClient httpClient;
     protected Server server;
     private ServerConnector connector;
 
-    public AbstractTest(String protocol) {
-        this.protocol = protocol;
+    @BeforeEach
+    public void before(TestInfo testInfo) {
+        printTestName(testInfo);
     }
 
-    @BeforeMethod
-    public void printTestName(Method method) {
-        System.err.printf("Running %s.%s() [%s]%n", getClass().getName(), method.getName(), protocol);
-    }
-
-    public void prepare(Handler handler) throws Exception {
+    public void prepare(String protocol, Handler handler) throws Exception {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
@@ -96,14 +94,10 @@ public class AbstractTest {
         }
     }
 
-    @AfterMethod
-    public void dispose() throws Exception {
-        if (httpClient != null) {
-            httpClient.stop();
-        }
-        if (server != null) {
-            server.stop();
-        }
+    @AfterEach
+    public void dispose() {
+        LifeCycle.stop(httpClient);
+        LifeCycle.stop(server);
     }
 
     protected HttpClient httpClient() {

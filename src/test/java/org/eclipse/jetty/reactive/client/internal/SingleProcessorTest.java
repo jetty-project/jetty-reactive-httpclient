@@ -15,7 +15,6 @@
  */
 package org.eclipse.jetty.reactive.client.internal;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -24,21 +23,25 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import io.reactivex.rxjava3.core.Flowable;
+import org.eclipse.jetty.reactive.client.AbstractTest;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SingleProcessorTest {
-    @BeforeMethod
-    public void printTestName(Method method) {
-        System.err.printf("Running %s.%s()%n", getClass().getName(), method.getName());
+    @BeforeEach
+    public void before(TestInfo testInfo) {
+        AbstractTest.printTestName(testInfo);
     }
 
     @Test
     public void testDemandWithoutUpStreamIsRemembered() throws Exception {
-        AbstractSingleProcessor<String, String> processor = new AbstractSingleProcessor<String, String>() {
+        AbstractSingleProcessor<String, String> processor = new AbstractSingleProcessor<>() {
             @Override
             public void onNext(String item) {
                 downStreamOnNext(item);
@@ -48,7 +51,7 @@ public class SingleProcessorTest {
         // First link a Subscriber, calling request(1) - no upStream yet.
         CountDownLatch latch = new CountDownLatch(1);
         List<String> items = new ArrayList<>();
-        processor.subscribe(new Subscriber<String>() {
+        processor.subscribe(new Subscriber<>() {
             private Subscription subscription;
 
             @Override
@@ -79,11 +82,11 @@ public class SingleProcessorTest {
                 .map(String::valueOf)
                 .subscribe(processor);
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
 
         List<String> expected = IntStream.range(0, count)
                 .mapToObj(String::valueOf)
                 .collect(Collectors.toList());
-        Assert.assertEquals(items, expected);
+        assertEquals(items, expected);
     }
 }
