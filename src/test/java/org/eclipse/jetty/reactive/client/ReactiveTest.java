@@ -20,28 +20,27 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpStatus;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import org.testng.Assert;
-import org.testng.annotations.Factory;
-import org.testng.annotations.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ReactiveTest extends AbstractTest {
-    @Factory(dataProvider = "protocols", dataProviderClass = AbstractTest.class)
-    public ReactiveTest(String protocol) {
-        super(protocol);
-    }
-
-    @Test
-    public void testSimpleReactiveUsage() throws Exception {
-        prepare(new EmptyHandler());
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testSimpleReactiveUsage(String protocol) throws Exception {
+        prepare(protocol, new EmptyHandler());
 
         Publisher<ReactiveResponse> publisher = ReactiveRequest.newBuilder(httpClient(), uri()).build().response();
 
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<ReactiveResponse> responseRef = new AtomicReference<>();
-        publisher.subscribe(new Subscriber<ReactiveResponse>() {
+        publisher.subscribe(new Subscriber<>() {
             @Override
             public void onSubscribe(Subscription subscription) {
                 subscription.request(1);
@@ -62,9 +61,9 @@ public class ReactiveTest extends AbstractTest {
             }
         });
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
         ReactiveResponse response = responseRef.get();
-        Assert.assertNotNull(response);
-        Assert.assertEquals(response.getStatus(), HttpStatus.OK_200);
+        assertNotNull(response);
+        assertEquals(response.getStatus(), HttpStatus.OK_200);
     }
 }
