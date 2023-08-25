@@ -88,7 +88,6 @@
     <rxjava-version>3.1.7</rxjava-version>
     <spring-version>5.3.29</spring-version>
     <slf4j-version>2.0.7</slf4j-version>
-    <log4j2-version>2.20.0</log4j2-version>
     <reactivestreams-version>1.0.4</reactivestreams-version>
   </properties>
 
@@ -365,15 +364,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j2-impl</artifactId>
-      <version>${log4j2-version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-      <version>${log4j2-version}</version>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <version>${jetty-version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
