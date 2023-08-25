@@ -47,7 +47,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -171,7 +170,6 @@ public class RxJava2Test extends AbstractTest {
 
     @ParameterizedTest
     @MethodSource("protocols")
-    @Disabled("Restore when Jetty issue #10102 is released")
     public void testResponseEvents(String protocol) throws Exception {
         prepare(protocol, new Handler.Abstract() {
             @Override
