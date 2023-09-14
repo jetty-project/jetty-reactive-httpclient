@@ -86,7 +86,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jetty-version>11.0.15</jetty-version>
     <rxjava-version>3.1.7</rxjava-version>
-    <spring-version>5.3.29</spring-version>
+    <spring-version>5.3.30</spring-version>
     <slf4j-version>2.0.7</slf4j-version>
     <reactivestreams-version>1.0.4</reactivestreams-version>
   </properties>
