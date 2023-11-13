@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
-    public static final Terminal<?> COMPLETE = Subscriber::onComplete;
+    private static final Terminal<?> COMPLETE = Subscriber::onComplete;
     private static final Logger logger = LoggerFactory.getLogger(QueuedSinglePublisher.class);
 
     private final Queue<Object> items = new ArrayDeque<>();

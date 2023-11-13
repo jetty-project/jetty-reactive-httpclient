@@ -30,7 +30,7 @@ public class StringContent extends AbstractSinglePublisher<Content.Chunk> implem
     private final String mediaType;
     private final Charset encoding;
     private final byte[] bytes;
-    private boolean complete;
+    private State state = State.INITIAL;
 
     public StringContent(String string, String mediaType, Charset encoding) {
         this.mediaType = Objects.requireNonNull(mediaType);
@@ -49,11 +49,31 @@ public class StringContent extends AbstractSinglePublisher<Content.Chunk> implem
     }
 
     @Override
+    public boolean rewind() {
+        state = State.INITIAL;
+        return true;
+    }
+
+    @Override
     protected void onRequest(Subscriber<? super Content.Chunk> subscriber, long n) {
-        if (!complete) {
-            complete = true;
-            subscriber.onNext(Content.Chunk.from(ByteBuffer.wrap(bytes), true));
-            subscriber.onComplete();
+        switch (state) {
+            case INITIAL: {
+                state = State.CONTENT;
+                subscriber.onNext(Content.Chunk.from(ByteBuffer.wrap(bytes), false));
+                break;
+            }
+            case CONTENT: {
+                state = State.COMPLETE;
+                subscriber.onComplete();
+                break;
+            }
+            default: {
+                break;
+            }
         }
+    }
+
+    private enum State {
+        INITIAL, CONTENT, COMPLETE
     }
 }

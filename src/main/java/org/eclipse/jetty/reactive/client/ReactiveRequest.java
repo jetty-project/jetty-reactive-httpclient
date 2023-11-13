@@ -22,8 +22,8 @@ import java.util.function.BiFunction;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.io.Content.Chunk;
+import org.eclipse.jetty.reactive.client.internal.AdapterRequestContent;
 import org.eclipse.jetty.reactive.client.internal.PublisherContent;
-import org.eclipse.jetty.reactive.client.internal.PublisherRequestContent;
 import org.eclipse.jetty.reactive.client.internal.RequestEventPublisher;
 import org.eclipse.jetty.reactive.client.internal.ResponseEventPublisher;
 import org.eclipse.jetty.reactive.client.internal.ResponseListenerProcessor;
@@ -175,7 +175,7 @@ public class ReactiveRequest {
          * @return this instance
          */
         public Builder content(Content content) {
-            request.body(new PublisherRequestContent(content));
+            request.body(new AdapterRequestContent(content));
             return this;
         }
 
@@ -301,6 +301,15 @@ public class ReactiveRequest {
          * @return the content type in the form {@code media_type[;charset=<charset>]}
          */
         public String getContentType();
+
+        /**
+         * <p>Rewinds this content, if possible.</p>
+         *
+         * @return whether this request content was rewound
+         */
+        public default boolean rewind() {
+            return false;
+        }
 
         public static Content fromString(String string, String mediaType, Charset charset) {
             return new StringContent(string, mediaType, charset);
