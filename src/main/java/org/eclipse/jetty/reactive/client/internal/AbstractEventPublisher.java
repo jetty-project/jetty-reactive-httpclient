@@ -50,7 +50,7 @@ public abstract class AbstractEventPublisher<T> extends AbstractSinglePublisher<
     protected void emit(T event) {
         Subscriber<? super T> subscriber = null;
         try (AutoLock ignored = lock()) {
-            if (!isCancelled() && demand > 0) {
+            if (demand > 0) {
                 --demand;
                 subscriber = subscriber();
             }

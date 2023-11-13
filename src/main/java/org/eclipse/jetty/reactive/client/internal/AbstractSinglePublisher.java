@@ -16,7 +16,6 @@
 package org.eclipse.jetty.reactive.client.internal;
 
 import java.util.Objects;
-import java.util.concurrent.CancellationException;
 
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.reactivestreams.Publisher;
@@ -26,16 +25,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A Publisher that supports a single Subscriber.
+ * <p>A {@link Publisher} that supports a single {@link Subscriber} at a time.</p>
  *
- * @param <T> the type of items emitted by this Publisher
+ * @param <T> the type of items emitted by this {@link Publisher}
  */
 public abstract class AbstractSinglePublisher<T> implements Publisher<T>, Subscription {
     private static final Logger logger = LoggerFactory.getLogger(AbstractSinglePublisher.class);
 
     private final AutoLock lock = new AutoLock();
     private Subscriber<? super T> subscriber;
-    private boolean cancelled;
 
     protected AutoLock lock() {
         return lock.lock();
@@ -49,11 +47,7 @@ public abstract class AbstractSinglePublisher<T> implements Publisher<T>, Subscr
             if (this.subscriber != null) {
                 failure = new IllegalStateException("multiple subscribers not supported");
             } else {
-                if (isCancelled()) {
-                    failure = new CancellationException();
-                } else {
-                    this.subscriber = subscriber;
-                }
+                this.subscriber = subscriber;
             }
         }
         if (logger.isDebugEnabled()) {
@@ -76,10 +70,7 @@ public abstract class AbstractSinglePublisher<T> implements Publisher<T>, Subscr
         Subscriber<? super T> subscriber;
         Throwable failure = null;
         try (AutoLock ignored = lock()) {
-            if (isCancelled()) {
-                return;
-            }
-            subscriber = subscriber();
+            subscriber = this.subscriber;
             if (n <= 0) {
                 failure = new IllegalArgumentException("reactive stream violation rule 3.9");
             }
@@ -99,20 +90,14 @@ public abstract class AbstractSinglePublisher<T> implements Publisher<T>, Subscr
 
     @Override
     public void cancel() {
-        Subscriber<? super T> subscriber;
         try (AutoLock ignored = lock()) {
-            cancelled = true;
-            subscriber = this.subscriber;
-            this.subscriber = null;
-        }
-        if (logger.isDebugEnabled()) {
-            logger.debug("{} cancelled subscription from {}", this, subscriber);
-        }
-    }
-
-    protected boolean isCancelled() {
-        try (AutoLock ignored = lock()) {
-            return cancelled;
+            if (subscriber != null) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("{} cancelled subscription from {}", this, subscriber);
+                }
+            }
+            // Null-out the field to allow re-subscriptions.
+            subscriber = null;
         }
     }
 

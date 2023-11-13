@@ -23,7 +23,9 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -35,11 +37,13 @@ import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Single;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.reactive.client.internal.AbstractSingleProcessor;
+import org.eclipse.jetty.reactive.client.internal.AbstractSinglePublisher;
 import org.eclipse.jetty.reactive.client.internal.BufferingProcessor;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -47,6 +51,9 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.MathUtils;
+import org.eclipse.jetty.util.thread.AutoLock;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -619,12 +626,174 @@ public class RxJava2Test extends AbstractTest {
         assertEquals(content.flip(), ByteBuffer.wrap(original));
     }
 
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testReproducibleContent(String protocol) throws Exception {
+        prepare(protocol, new Handler.Abstract() {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) {
+                String target = Request.getPathInContext(request);
+                if (!target.equals("/ok")) {
+                    Response.sendRedirect(request, response, callback, HttpStatus.TEMPORARY_REDIRECT_307, "/ok", true);
+                } else {
+                    Content.copy(request, response, callback);
+                }
+                return true;
+            }
+        });
+
+        String text = "hello world";
+        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient().newRequest(uri()).method(HttpMethod.POST))
+                .content(ReactiveRequest.Content.fromString(text, "text/plain", StandardCharsets.UTF_8))
+                .build();
+        String content = Single.fromPublisher(request.response(ReactiveResponse.Content.asString()))
+                .blockingGet();
+
+        assertEquals(text, content);
+    }
+
+    @Disabled("Requires Jetty Issue #10879")
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testReproducibleContentSplitAndDelayed(String protocol) throws Exception {
+        prepare(protocol, new Handler.Abstract() {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) {
+                String target = Request.getPathInContext(request);
+                if (!target.equals("/ok")) {
+                    Response.sendRedirect(request, response, callback, HttpStatus.TEMPORARY_REDIRECT_307, "/ok", true);
+                } else {
+                    Content.copy(request, response, callback);
+                }
+                return true;
+            }
+        });
+
+        String text1 = "hello";
+        String text2 = "world";
+        ChunkListSinglePublisher publisher = new ChunkListSinglePublisher();
+        // Offer content to trigger the sending of the request and the processing on the server.
+        publisher.offer(StandardCharsets.UTF_8.encode(text1));
+        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient().newRequest(uri()).method(HttpMethod.POST))
+                .content(ReactiveRequest.Content.fromPublisher(publisher, "text/plain", StandardCharsets.UTF_8))
+                .build();
+        Single<String> flow = Single.fromPublisher(request.response(ReactiveResponse.Content.asString()));
+        // Send the request by subscribing as a CompletableFuture.
+        CompletableFuture<String> completable = flow.toCompletionStage().toCompletableFuture();
+
+        // Allow the redirect to happen.
+        Thread.sleep(1000);
+
+        publisher.offer(StandardCharsets.UTF_8.encode(text2));
+        publisher.complete();
+
+        assertEquals(text1 + text2, completable.get(5, TimeUnit.SECONDS));
+    }
+
     private record Pair<X, Y>(X one, Y two) {
     }
 
     private record BufferedResponse(ReactiveResponse response, List<Content.Chunk> chunks) {
         private BufferedResponse(ReactiveResponse response) {
             this(response, new ArrayList<>());
+        }
+    }
+
+    private static class ChunkListSinglePublisher extends AbstractSinglePublisher<Content.Chunk> {
+        private final List<ByteBuffer> byteBuffers = new ArrayList<>();
+        private boolean complete;
+        private boolean stalled;
+        private long demand;
+        private int index;
+
+        private ChunkListSinglePublisher() {
+            reset();
+        }
+
+        private void reset() {
+            try (AutoLock ignored = lock()) {
+                complete = false;
+                stalled = true;
+                demand = 0;
+                index = 0;
+            }
+        }
+
+        private void offer(ByteBuffer byteBuffer) {
+            Subscriber<? super Content.Chunk> subscriber;
+            try (AutoLock ignored = lock()) {
+                byteBuffers.add(Objects.requireNonNull(byteBuffer));
+                subscriber = subscriber();
+                if (subscriber != null) {
+                    stalled = false;
+                }
+            }
+            if (subscriber != null) {
+                proceed(subscriber);
+            }
+        }
+
+        private void complete() {
+            complete = true;
+            Subscriber<? super Content.Chunk> subscriber = subscriber();
+            if (subscriber != null) {
+                proceed(subscriber);
+            }
+        }
+
+        @Override
+        protected void onRequest(Subscriber<? super Content.Chunk> subscriber, long n) {
+            boolean proceed = false;
+            try (AutoLock ignored = lock()) {
+                demand = MathUtils.cappedAdd(demand, n);
+                if (stalled) {
+                    stalled = false;
+                    proceed = true;
+                }
+            }
+            if (proceed) {
+                proceed(subscriber);
+            }
+        }
+
+        private void proceed(Subscriber<? super Content.Chunk> subscriber) {
+            while (true) {
+                ByteBuffer byteBuffer = null;
+                boolean notify = false;
+                try (AutoLock ignored = lock()) {
+                    if (index < byteBuffers.size()) {
+                        if (demand > 0) {
+                            byteBuffer = byteBuffers.get(index);
+                            ++index;
+                            --demand;
+                            notify = true;
+                        } else {
+                            stalled = true;
+                        }
+                    } else {
+                        if (complete) {
+                            notify = true;
+                        } else {
+                            stalled = true;
+                        }
+                    }
+                }
+                if (notify) {
+                    if (byteBuffer != null) {
+                        subscriber.onNext(Content.Chunk.from(byteBuffer.slice(), false));
+                        continue;
+                    } else {
+                        subscriber.onComplete();
+                    }
+                }
+                break;
+            }
+        }
+
+        @Override
+        public void cancel() {
+            reset();
+            super.cancel();
         }
     }
 }

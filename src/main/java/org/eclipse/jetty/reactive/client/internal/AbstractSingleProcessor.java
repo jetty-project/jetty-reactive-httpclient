@@ -20,9 +20,21 @@ import java.util.Objects;
 import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.reactivestreams.Processor;
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+/**
+ * <p>A {@link Processor} that allows a single {@link Subscriber} at a time,
+ * and can subscribe to only one {@link Publisher} at a time.</p>
+ * <p>The implementation acts as a {@link Subscriber} to upstream input,
+ * and acts as a {@link Publisher} for the downstream output.</p>
+ * <p>Subclasses implement the transformation of the input elements into the
+ * output elements by overriding {@link #onNext(Object)}.</p>
+ *
+ * @param <I> the type of the input elements
+ * @param <O> the type of the output elements
+ */
 public abstract class AbstractSingleProcessor<I, O> extends AbstractSinglePublisher<O> implements Processor<I, O> {
     private Subscription upStream;
     private long demand;
@@ -44,10 +56,12 @@ public abstract class AbstractSingleProcessor<I, O> extends AbstractSinglePublis
     }
 
     private void upStreamCancel() {
-        upStreamCancel(upStream());
-    }
-
-    private void upStreamCancel(Subscription upStream) {
+        Subscription upStream;
+        try (AutoLock ignored = lock()) {
+            upStream = this.upStream;
+            // Null-out the field to allow re-subscriptions.
+            this.upStream = null;
+        }
         if (upStream != null) {
             upStream.cancel();
         }
@@ -59,7 +73,8 @@ public abstract class AbstractSingleProcessor<I, O> extends AbstractSinglePublis
         Subscription upStream;
         try (AutoLock ignored = lock()) {
             demand = MathUtils.cappedAdd(this.demand, n);
-            upStream = upStream();
+            upStream = this.upStream;
+            // If there is not upStream yet, remember the demand.
             this.demand = upStream == null ? demand : 0;
         }
         upStreamRequest(upStream, demand);
@@ -79,28 +94,27 @@ public abstract class AbstractSingleProcessor<I, O> extends AbstractSinglePublis
     public void onSubscribe(Subscription subscription) {
         Objects.requireNonNull(subscription, "invalid 'null' subscription");
         long demand = 0;
-        boolean cancel = false;
+        Throwable failure = null;
         try (AutoLock ignored = lock()) {
             if (this.upStream != null) {
-                cancel = true;
+                failure = new IllegalStateException("multiple subscriptions not supported");
             } else {
-                if (isCancelled()) {
-                    cancel = true;
-                } else {
-                    this.upStream = subscription;
-                    demand = this.demand;
-                    this.demand = 0;
-                }
+                this.upStream = subscription;
+                // The demand stored so far will be forwarded.
+                demand = this.demand;
+                this.demand = 0;
             }
         }
-        if (cancel) {
+        if (failure != null) {
             subscription.cancel();
+            onError(failure);
         } else if (demand > 0) {
+            // Forward any previously stored demand.
             subscription.request(demand);
         }
     }
 
-    protected Subscription upStream() {
+    private Subscription upStream() {
         try (AutoLock ignored = lock()) {
             return upStream;
         }

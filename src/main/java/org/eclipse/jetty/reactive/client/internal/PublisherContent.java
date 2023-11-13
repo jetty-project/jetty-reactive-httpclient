@@ -20,16 +20,29 @@ import java.util.Objects;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.reactive.client.ReactiveRequest;
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
 
 /**
- * A {@link ReactiveRequest.Content} that wraps a Publisher.
+ * A {@link ReactiveRequest.Content} that wraps a {@link Publisher}.
  */
 public class PublisherContent extends AbstractSingleProcessor<Content.Chunk, Content.Chunk> implements ReactiveRequest.Content {
+    private final Publisher<Content.Chunk> publisher;
     private final String contentType;
 
     public PublisherContent(Publisher<Content.Chunk> publisher, String contentType) {
+        this.publisher = publisher;
         this.contentType = Objects.requireNonNull(contentType);
+    }
+
+    @Override
+    public void subscribe(Subscriber<? super Content.Chunk> subscriber) {
+        super.subscribe(subscriber);
         publisher.subscribe(this);
+    }
+
+    @Override
+    public void onNext(Content.Chunk chunk) {
+        downStreamOnNext(chunk);
     }
 
     @Override
@@ -43,7 +56,7 @@ public class PublisherContent extends AbstractSingleProcessor<Content.Chunk, Con
     }
 
     @Override
-    public void onNext(Content.Chunk chunk) {
-        downStreamOnNext(chunk);
+    public boolean rewind() {
+        return true;
     }
 }
