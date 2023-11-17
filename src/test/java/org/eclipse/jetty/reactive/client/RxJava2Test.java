@@ -17,6 +17,7 @@ package org.eclipse.jetty.reactive.client;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
@@ -27,11 +28,10 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import io.reactivex.rxjava3.core.Emitter;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Single;
@@ -42,15 +42,14 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.reactive.client.internal.AbstractSingleProcessor;
 import org.eclipse.jetty.reactive.client.internal.AbstractSinglePublisher;
-import org.eclipse.jetty.reactive.client.internal.BufferingProcessor;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.junit.jupiter.api.Disabled;
@@ -58,7 +57,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -81,7 +79,8 @@ public class RxJava2Test extends AbstractTest {
 
         CountDownLatch contentLatch = new CountDownLatch(1);
         CountDownLatch responseLatch = new CountDownLatch(1);
-        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient().newRequest("https://example.org")).build();
+        URI uri = URI.create("https://example.org");
+        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient().newRequest(uri)).build();
         Flowable.fromPublisher(request.response((reactiveResponse, chunkPublisher) -> Flowable.fromPublisher(chunkPublisher)
                 .map(chunk -> {
                     ByteBuffer byteBuffer = chunk.getByteBuffer();
@@ -370,15 +369,13 @@ public class RxJava2Test extends AbstractTest {
         });
 
         ReactiveRequest request = ReactiveRequest.newBuilder(httpClient(), uri()).build();
-        Pair<ReactiveResponse, Publisher<Content.Chunk>> pair = Single.fromPublisher(request.response((response, content) ->
-                Flowable.just(new Pair<>(response, content)))).blockingGet();
-        ReactiveResponse response = pair.one;
+        ReactiveResponse.Result<Publisher<Content.Chunk>> result = Single.fromPublisher(request.response((response, content) ->
+                Flowable.just(new ReactiveResponse.Result<>(response, content)))).blockingGet();
 
-        assertEquals(response.getStatus(), HttpStatus.OK_200);
+        assertEquals(result.response().getStatus(), HttpStatus.OK_200);
 
-        BufferingProcessor processor = new BufferingProcessor(response);
-        pair.two.subscribe(processor);
-        String responseContent = Single.fromPublisher(processor).blockingGet();
+        String responseContent = Single.fromPublisher(ReactiveResponse.Content.asString().apply(result.response(), result.content()))
+                .blockingGet();
 
         assertEquals(responseContent, pangram);
     }
@@ -525,7 +522,7 @@ public class RxJava2Test extends AbstractTest {
             } else {
                 return ReactiveResponse.Content.asString().apply(response, content);
             }
-        })).subscribe((status, failure) -> {
+        })).subscribe((content, failure) -> {
             if (failure != null) {
                 latch.countDown();
             }
@@ -562,68 +559,67 @@ public class RxJava2Test extends AbstractTest {
 
         ReactiveRequest request = ReactiveRequest.newBuilder(httpClient().newRequest(uri())).build();
 
-        // RxJava2 API always call request(Long.MAX_VALUE),
-        // but I want to control backpressure explicitly,
-        // so below the RxJava2 APIs are not used (much).
-
-        Publisher<BufferedResponse> bufRespPub = request.response((response, content) -> {
-            BufferedResponse result = new BufferedResponse(response);
+        Publisher<ReactiveResponse.Result<String>> publisher = request.response((response, content) -> {
             if (response.getStatus() == HttpStatus.OK_200) {
-                Processor<Content.Chunk, BufferedResponse> processor = new AbstractSingleProcessor<>() {
-                    @Override
-                    public void onNext(Content.Chunk chunk) {
-                        // Accumulate the chunks, without consuming
-                        // the buffers nor completing the callbacks.
-                        result.chunks.add(chunk);
-                        upStreamRequest(1);
-                    }
-
-                    @Override
-                    public void onComplete() {
-                        downStreamOnNext(result);
-                        super.onComplete();
-                    }
-                };
-                content.subscribe(processor);
-                return processor;
+                return ReactiveResponse.Content.asStringResult().apply(response, content);
             } else {
-                ReactiveResponse.Content.discard().apply(response, content);
-                return Flowable.just(result);
+                return ReactiveResponse.Content.<String>asDiscardResult().apply(response, content);
             }
         });
 
-        AtomicReference<BufferedResponse> ref = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        bufRespPub.subscribe(new Subscriber<>() {
-            @Override
-            public void onSubscribe(Subscription subscription) {
-                subscription.request(1);
-            }
+        ReactiveResponse.Result<String> result = Single.fromPublisher(publisher)
+                .blockingGet();
 
-            @Override
-            public void onNext(BufferedResponse bufferedResponse) {
-                ref.set(bufferedResponse);
-            }
+        assertEquals(result.response().getStatus(), HttpStatus.OK_200);
+;
+        String expected = StandardCharsets.UTF_8.decode(ByteBuffer.allocate(original.length)
+                .put(original)
+                .flip()).toString();
+        assertEquals(expected, result.content());
+    }
 
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testSlowDownload(String protocol) throws Exception {
+        byte[] bytes = new byte[512 * 1024];
+        ThreadLocalRandom.current().nextBytes(bytes);
+        ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
+        prepare(protocol, new Handler.Abstract() {
             @Override
-            public void onError(Throwable throwable) {
-            }
+            public boolean handle(Request request, Response response, Callback callback) {
+                new IteratingCallback() {
+                    @Override
+                    protected Action process() throws Exception {
+                        // Write slowly 1 byte at a time.
+                        if (byteBuffer.position() % 256 == 0) {
+                            Thread.sleep(1);
+                        }
+                        ByteBuffer data = ByteBuffer.wrap(new byte[]{byteBuffer.get()});
+                        boolean last = !byteBuffer.hasRemaining();
+                        response.write(last, data, this);
+                        return last ? Action.SUCCEEDED : Action.SCHEDULED;
+                    }
 
-            @Override
-            public void onComplete() {
-                latch.countDown();
+                    @Override
+                    protected void onCompleteSuccess() {
+                        callback.succeeded();
+                    }
+
+                    @Override
+                    protected void onCompleteFailure(Throwable cause) {
+                        callback.failed(cause);
+                    }
+                }.iterate();
+                return true;
             }
         });
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
-        BufferedResponse bufferedResponse = ref.get();
-        assertEquals(bufferedResponse.response.getStatus(), HttpStatus.OK_200);
-        ByteBuffer content = ByteBuffer.allocate(content1.length + content2.length);
-        bufferedResponse.chunks.forEach(chunk -> {
-            content.put(chunk.getByteBuffer());
-            chunk.release();
-        });
-        assertEquals(content.flip(), ByteBuffer.wrap(original));
+        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient().newRequest(uri())).build();
+
+        ReactiveResponse.Result<ByteBuffer> result = Single.fromPublisher(request.response(ReactiveResponse.Content.asByteBufferResult()))
+                .blockingGet();
+        assertEquals(HttpStatus.OK_200, result.response().getStatus());
+        assertArrayEquals(bytes, BufferUtil.toArray(result.content()));
     }
 
     @ParameterizedTest
@@ -688,15 +684,6 @@ public class RxJava2Test extends AbstractTest {
         publisher.complete();
 
         assertEquals(text1 + text2, completable.get(5, TimeUnit.SECONDS));
-    }
-
-    private record Pair<X, Y>(X one, Y two) {
-    }
-
-    private record BufferedResponse(ReactiveResponse response, List<Content.Chunk> chunks) {
-        private BufferedResponse(ReactiveResponse response) {
-            this(response, new ArrayList<>());
-        }
     }
 
     private static class ChunkListSinglePublisher extends AbstractSinglePublisher<Content.Chunk> {
