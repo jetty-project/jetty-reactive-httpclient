@@ -18,13 +18,15 @@ package org.eclipse.jetty.reactive.client;
 import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.function.BiFunction;
-
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Content.Chunk;
-import org.eclipse.jetty.reactive.client.internal.BufferingProcessor;
+import org.eclipse.jetty.reactive.client.internal.ByteBufferBufferingProcessor;
 import org.eclipse.jetty.reactive.client.internal.DiscardingProcessor;
+import org.eclipse.jetty.reactive.client.internal.ResultProcessor;
+import org.eclipse.jetty.reactive.client.internal.StringBufferingProcessor;
+import org.eclipse.jetty.reactive.client.internal.Transformer;
 import org.reactivestreams.Publisher;
 
 /**
@@ -143,14 +145,113 @@ public class ReactiveResponse {
 
         /**
          * @return a response content processing function that converts the content to a string
+         * up to {@value StringBufferingProcessor#DEFAULT_MAX_CAPACITY} bytes.
          */
         public static BiFunction<ReactiveResponse, Publisher<Chunk>, Publisher<String>> asString() {
+            return asString(StringBufferingProcessor.DEFAULT_MAX_CAPACITY);
+        }
+
+        /**
+         * @return a response content processing function that converts the content to a string
+         * up to the specified maximum capacity in bytes.
+         */
+        public static BiFunction<ReactiveResponse, Publisher<Chunk>, Publisher<String>> asString(int maxCapacity) {
             return (response, content) -> {
-                BufferingProcessor result = new BufferingProcessor(response);
+                StringBufferingProcessor result = new StringBufferingProcessor(response, maxCapacity);
                 content.subscribe(result);
                 return result;
             };
         }
+
+        /**
+         * @return a response content processing function that converts the content to a {@link ByteBuffer}
+         * up to {@value ByteBufferBufferingProcessor#DEFAULT_MAX_CAPACITY} bytes.
+         */
+        public static BiFunction<ReactiveResponse, Publisher<Chunk>, Publisher<ByteBuffer>> asByteBuffer() {
+            return asByteBuffer(ByteBufferBufferingProcessor.DEFAULT_MAX_CAPACITY);
+        }
+
+        /**
+         * @return a response content processing function that converts the content to a {@link ByteBuffer}
+         * up to the specified maximum capacity in bytes.
+         */
+        public static BiFunction<ReactiveResponse, Publisher<Chunk>, Publisher<ByteBuffer>> asByteBuffer(int maxCapacity) {
+            return (response, content) -> {
+                ByteBufferBufferingProcessor result = new ByteBufferBufferingProcessor(response, maxCapacity);
+                content.subscribe(result);
+                return result;
+            };
+        }
+
+        /**
+         * @return a response content processing function that discards the content
+         * and produces a {@link Result} with a {@code null} content of the given type.
+         *
+         * @param <T> the type of the content
+         */
+        public static <T> BiFunction<ReactiveResponse, Publisher<Chunk>, Publisher<Result<T>>> asDiscardResult() {
+            return (response, content) -> {
+                ResultProcessor<ReactiveResponse> resultProcessor = new ResultProcessor<>(response);
+                discard().apply(response, content).subscribe(resultProcessor);
+                Transformer<Result<ReactiveResponse>, Result<T>> transformer = new Transformer<>(r -> null);
+                resultProcessor.subscribe(transformer);
+                return transformer;
+            };
+        }
+
+        /**
+         * @return a response content processing function that converts the content to a string
+         * up to {@value StringBufferingProcessor#DEFAULT_MAX_CAPACITY} bytes,
+         * and produces a {@link Result} with the string content.
+         */
+        public static BiFunction<ReactiveResponse, Publisher<Chunk>, Publisher<Result<String>>> asStringResult() {
+            return asStringResult(StringBufferingProcessor.DEFAULT_MAX_CAPACITY);
+        }
+
+        /**
+         * @return a response content processing function that converts the content to a string
+         * up to the specified maximum capacity in bytes,
+         * and produces a {@link Result} with the string content.
+         */
+        public static BiFunction<ReactiveResponse, Publisher<Chunk>, Publisher<Result<String>>> asStringResult(int maxCapacity) {
+            return (response, content) -> {
+                ResultProcessor<String> resultProcessor = new ResultProcessor<>(response);
+                asString(maxCapacity).apply(response, content).subscribe(resultProcessor);
+                return resultProcessor;
+            };
+        }
+
+        /**
+         * @return a response content processing function that converts the content to a {@link ByteBuffer}
+         * up to {@value ByteBufferBufferingProcessor#DEFAULT_MAX_CAPACITY} bytes,
+         * and produces a {@link Result} with the {@link ByteBuffer} content.
+         */
+        public static BiFunction<ReactiveResponse, Publisher<Chunk>, Publisher<Result<ByteBuffer>>> asByteBufferResult() {
+            return asByteBufferResult(ByteBufferBufferingProcessor.DEFAULT_MAX_CAPACITY);
+        }
+
+        /**
+         * @return a response content processing function that converts the content to a {@link ByteBuffer}
+         * up to the specified maximum capacity in bytes,
+         * and produces a {@link Result} with the {@link ByteBuffer} content.
+         */
+        public static BiFunction<ReactiveResponse, Publisher<Chunk>, Publisher<Result<ByteBuffer>>> asByteBufferResult(int maxCapacity) {
+            return (response, content) -> {
+                ResultProcessor<ByteBuffer> resultProcessor = new ResultProcessor<>(response);
+                asByteBuffer(maxCapacity).apply(response, content).subscribe(resultProcessor);
+                return resultProcessor;
+            };
+        }
+    }
+
+    /**
+     * <p>A record holding the {@link ReactiveResponse} and the response content.</p>
+     *
+     * @param response the response
+     * @param content the response content
+     * @param <T> the type of the response content
+     */
+    public record Result<T>(ReactiveResponse response, T content) {
     }
 
     public static class Event {

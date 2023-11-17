@@ -16,7 +16,6 @@
 package org.eclipse.jetty.reactive.client.internal;
 
 import java.util.Objects;
-
 import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.reactivestreams.Processor;
@@ -55,7 +54,7 @@ public abstract class AbstractSingleProcessor<I, O> extends AbstractSinglePublis
         super.cancel();
     }
 
-    private void upStreamCancel() {
+    protected void upStreamCancel() {
         Subscription upStream;
         try (AutoLock ignored = lock()) {
             upStream = this.upStream;

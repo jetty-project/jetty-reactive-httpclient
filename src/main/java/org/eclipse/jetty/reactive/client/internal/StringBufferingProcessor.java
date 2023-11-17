@@ -17,28 +17,18 @@ package org.eclipse.jetty.reactive.client.internal;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
-
+import java.util.Objects;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.reactive.client.ReactiveResponse;
 
-public class BufferingProcessor extends AbstractSingleProcessor<Content.Chunk, String> {
-    private final List<Content.Chunk> chunks = new ArrayList<>();
-    private final ReactiveResponse response;
-
-    public BufferingProcessor(ReactiveResponse response) {
-        this.response = response;
+public class StringBufferingProcessor extends AbstractBufferingProcessor<String> {
+    public StringBufferingProcessor(ReactiveResponse response, int maxCapacity) {
+        super(response, maxCapacity);
     }
 
     @Override
-    public void onNext(Content.Chunk chunk) {
-        chunks.add(chunk);
-        upStreamRequest(1);
-    }
-
-    @Override
-    public void onComplete() {
+    protected String process(List<Content.Chunk> chunks) {
         int length = chunks.stream().mapToInt(Content.Chunk::remaining).sum();
         byte[] bytes = new byte[length];
         int offset = 0;
@@ -48,14 +38,7 @@ public class BufferingProcessor extends AbstractSingleProcessor<Content.Chunk, S
             offset += l;
             chunk.release();
         }
-
-        String encoding = response.getEncoding();
-        if (encoding == null) {
-            encoding = StandardCharsets.UTF_8.name();
-        }
-
-        downStreamOnNext(new String(bytes, Charset.forName(encoding)));
-
-        super.onComplete();
+        String encoding = Objects.requireNonNullElse(getResponse().getEncoding(), StandardCharsets.UTF_8.name());
+        return new String(bytes, Charset.forName(encoding));
     }
 }

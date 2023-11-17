@@ -2,9 +2,7 @@
 
 # Jetty ReactiveStream HttpClient
 
-A [ReactiveStreams](http://www.reactive-streams.org/) wrapper around 
-[Jetty](https://eclipse.org/jetty)'s 
-[HttpClient](https://www.eclipse.org/jetty/documentation/jetty-12/programming-guide/index.html#pg-client-http).
+A [ReactiveStreams](http://www.reactive-streams.org/) wrapper around [Jetty](https://eclipse.dev/jetty)'s [HttpClient](https://www.eclipse.dev/jetty/documentation/jetty-12/programming-guide/index.html#pg-client-http).
 
 ## Versions
 
@@ -82,9 +80,7 @@ int status = Single.fromPublisher(publisher)
 
 The response content is processed by passing a `BiFunction` to `ReactiveRequest.response()`.
 
-The `BiFunction` takes as parameters the `ReactiveResponse` and a `Publisher` for the response
-content, and must return a `Publisher` of items of type `T` that is the result of the response
-content processing.
+The `BiFunction` takes as parameters the `ReactiveResponse` and a `Publisher` for the response content, and must return a `Publisher` of items of type `T` that is the result of the response content processing.
 
 Built-in utility functions can be found in `ReactiveResponse.Content`.
 
@@ -100,8 +96,21 @@ Publisher<ReactiveResponse> response = request.response(ReactiveResponse.Content
 Publisher<String> string = request.response(ReactiveResponse.Content.asString());
 ```
 
-Alternatively, you can write your own processing `BiFunction` using any
-ReactiveStreams library, such as RxJava 2 (which provides class `Flowable`):
+#### Example: discarding non 200 OK response content
+
+```java
+Publisher<ReactiveResponse.Result<String>> publisher = request.response((response, content) -> {
+    if (response.getStatus() == HttpStatus.OK_200) {
+        return ReactiveResponse.Content.asStringResult().apply(response, content);
+    } else {
+        return ReactiveResponse.Content.<String>asDiscardResult().apply(response, content);
+    }
+});
+```
+
+Class `ReactiveResponse.Result` is a Java `record` that holds the response and the response content to allow application code to implement logic that uses both response information such as response status code and response headers, and response content information.
+
+Alternatively, you can write your own processing `BiFunction` using any ReactiveStreams library, such as RxJava 2 (which provides class `Flowable`):
 
 #### Example: discarding non 200 OK response content
 
@@ -123,7 +132,7 @@ Publisher<Content.Chunk> publisher = reactiveRequest.response((reactiveResponse,
 });
 ```
 
-Then the response content (if any) can be further processed:
+The response content (if any) can be further processed:
 
 ```java
 Single<Long> contentLength = Flowable.fromPublisher(publisher)
@@ -139,11 +148,9 @@ Single<Long> contentLength = Flowable.fromPublisher(publisher)
 
 ### Providing Request Content
 
-Request content can be provided in a ReactiveStreams way, through the `ReactiveRequest.Content`
-class, which _is-a_ `Publisher` with the additional specification of the content length
-and the content type.
-Below you can find an example using the utility methods in `ReactiveRequest.Content`
-to create request content from a String:
+Request content can be provided in a ReactiveStreams way, through the `ReactiveRequest.Content` class, which _is-a_ `Publisher` with the additional specification of the content length and the content type.
+
+Below you can find an example using the utility methods in `ReactiveRequest.Content` to create request content from a String:
 
 ```java
 HttpClient httpClient = ...;
@@ -177,14 +184,11 @@ ReactiveRequest request = ReactiveRequest.newBuilder(httpClient, "http://localho
 
 ### Events
 
-If you are interested in the request and/or response events that are emitted
-by the Jetty HttpClient APIs, you can obtain a `Publisher` for request and/or
-response events, and subscribe a listener to be notified of the events.
+If you are interested in the request and/or response events that are emitted by the Jetty HttpClient APIs, you can obtain a `Publisher` for request and/or response events, and subscribe a listener to be notified of the events.
 
 The event `Publisher`s are "hot" producers and do no buffer events.
-If you subscribe to an event `Publisher` after the events have started, the 
-`Subscriber` will not be notified of events that already happened, and will
-be notified of any event that will happen.
+
+If you subscribe to an event `Publisher` after the events have started, the `Subscriber` will not be notified of events that already happened, and will be notified of any event that will happen.
 
 ```java
 HttpClient httpClient = ...;
