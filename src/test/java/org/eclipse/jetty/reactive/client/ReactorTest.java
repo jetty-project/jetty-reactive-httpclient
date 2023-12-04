@@ -21,13 +21,11 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.http.client.reactive.JettyClientHttpConnector;
@@ -37,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@Disabled("Spring WebFlux is only compatible with Jetty 9.4.x")
 public class ReactorTest extends AbstractTest {
     @ParameterizedTest
     @MethodSource("protocols")
