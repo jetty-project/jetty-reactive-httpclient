@@ -52,7 +52,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.thread.AutoLock;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -648,7 +647,6 @@ public class RxJava2Test extends AbstractTest {
         assertEquals(text, content);
     }
 
-    @Disabled("Requires Jetty Issue #10879")
     @ParameterizedTest
     @MethodSource("protocols")
     public void testReproducibleContentSplitAndDelayed(String protocol) throws Exception {
