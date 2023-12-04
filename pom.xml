@@ -86,7 +86,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jetty-version>11.0.18</jetty-version>
     <rxjava-version>3.1.8</rxjava-version>
-    <spring-version>5.3.30</spring-version>
+    <spring-version>5.3.31</spring-version>
     <slf4j-version>2.0.9</slf4j-version>
     <reactivestreams-version>1.0.4</reactivestreams-version>
   </properties>
@@ -222,7 +222,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.6.0</version>
+          <version>3.6.2</version>
           <configuration>
             <source>8</source>
             <additionalOptions>
@@ -255,7 +255,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.2.1</version>
+          <version>3.2.2</version>
         </plugin>
         <plugin>
           <groupId>org.apache.felix</groupId>
@@ -372,7 +372,7 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
-      <version>5.10.0</version>
+      <version>5.10.1</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
