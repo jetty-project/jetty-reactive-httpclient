@@ -402,7 +402,7 @@ public class RxJava2Test extends AbstractTest {
         ReactiveRequest request = ReactiveRequest.newBuilder(httpClient(), uri()).build();
         request.getRequest().onResponseContent((response, chunk) -> chunks.incrementAndGet());
 
-        var publisher = request.response((response, content) -> content);
+        Publisher<Content.Chunk> publisher = request.response((response, content) -> content);
 
         CountDownLatch completeLatch = new CountDownLatch(1);
         var subscriber = new Subscriber<Content.Chunk>() {
