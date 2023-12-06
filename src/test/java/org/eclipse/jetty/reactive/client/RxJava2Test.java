@@ -63,6 +63,7 @@ import org.reactivestreams.Subscription;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -435,17 +436,14 @@ public class RxJava2Test extends AbstractTest {
         // Send the request and demand 1 chunk of content.
         subscriber.subscription.request(1);
 
-        Thread.sleep(1000);
-
         // There should be 1 chunk only.
-        assertEquals(1, chunks.get());
+        await().during(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).until(chunks::get, is(1));
         Content.Chunk chunk = await().atMost(5, TimeUnit.SECONDS).until(() -> subscriber.chunk, notNullValue());
         subscriber.chunk = null;
         assertEquals("hello", UTF_8.decode(chunk.getByteBuffer()).toString());
 
         // Wait to be sure there is backpressure.
-        Thread.sleep(500);
-        assertEquals(1, chunks.get());
+        await().during(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).until(chunks::get, is(1));
 
         // Demand 1 more chunk.
         subscriber.subscription.request(1);
