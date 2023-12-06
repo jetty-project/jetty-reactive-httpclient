@@ -30,6 +30,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import io.reactivex.rxjava3.core.Emitter;
@@ -60,6 +61,9 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -83,7 +87,7 @@ public class RxJava2Test extends AbstractTest {
         Flowable.fromPublisher(request.response((reactiveResponse, chunkPublisher) -> Flowable.fromPublisher(chunkPublisher)
                 .map(chunk -> {
                     ByteBuffer byteBuffer = chunk.getByteBuffer();
-                    CharBuffer charBuffer = StandardCharsets.UTF_8.decode(byteBuffer);
+                    CharBuffer charBuffer = UTF_8.decode(byteBuffer);
                     chunk.release();
                     return charBuffer.toString();
                 }).doOnComplete(contentLatch::countDown)))
@@ -250,7 +254,7 @@ public class RxJava2Test extends AbstractTest {
 
         String text = "Γειά σου Κόσμε";
         ReactiveRequest request = ReactiveRequest.newBuilder(httpClient(), uri())
-                .content(ReactiveRequest.Content.fromString(text, "text/plain", StandardCharsets.UTF_8))
+                .content(ReactiveRequest.Content.fromString(text, "text/plain", UTF_8))
                 .build();
 
         String content = Single.fromPublisher(request.response(ReactiveResponse.Content.asString()))
@@ -279,7 +283,7 @@ public class RxJava2Test extends AbstractTest {
         Flowable<String> stream = Flowable.fromArray(data.split("(?!^)"));
 
         // Transform it to chunks, showing what you can use the callback for.
-        Charset charset = StandardCharsets.UTF_8;
+        Charset charset = UTF_8;
         ByteBufferPool bufferPool = httpClient().getByteBufferPool();
         Flowable<Content.Chunk> chunks = stream.map(item -> item.getBytes(charset))
                 .map(bytes -> {
@@ -377,6 +381,82 @@ public class RxJava2Test extends AbstractTest {
                 .blockingGet();
 
         assertEquals(responseContent, pangram);
+    }
+
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testFlowableResponseBodyBackPressure(String protocol) throws Exception {
+        prepare(protocol, new Handler.Abstract() {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) {
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+                Callback.Completable completable = new Callback.Completable();
+                Content.Sink.write(response, false, "hello", completable);
+                completable.thenRun(() -> Content.Sink.write(response, true, "world", callback));
+                return true;
+            }
+        });
+
+        AtomicInteger chunks = new AtomicInteger();
+        ReactiveRequest request = ReactiveRequest.newBuilder(httpClient(), uri()).build();
+        request.getRequest().onResponseContent((response, chunk) -> chunks.incrementAndGet());
+
+        var publisher = request.response((response, content) -> content);
+
+        CountDownLatch completeLatch = new CountDownLatch(1);
+        var subscriber = new Subscriber<Content.Chunk>() {
+            private Subscription subscription;
+            private Content.Chunk chunk;
+
+            @Override
+            public void onSubscribe(Subscription subscription) {
+                this.subscription = subscription;
+            }
+
+            @Override
+            public void onNext(Content.Chunk chunk) {
+                this.chunk = chunk;
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+            }
+
+            @Override
+            public void onComplete() {
+                completeLatch.countDown();
+            }
+        };
+        publisher.subscribe(subscriber);
+
+        // There is no demand yet, so there should be no chunks.
+        assertEquals(0, chunks.get());
+
+        // Send the request and demand 1 chunk of content.
+        subscriber.subscription.request(1);
+
+        Thread.sleep(1000);
+
+        // There should be 1 chunk only.
+        assertEquals(1, chunks.get());
+        Content.Chunk chunk = await().atMost(5, TimeUnit.SECONDS).until(() -> subscriber.chunk, notNullValue());
+        subscriber.chunk = null;
+        assertEquals("hello", UTF_8.decode(chunk.getByteBuffer()).toString());
+
+        // Wait to be sure there is backpressure.
+        Thread.sleep(500);
+        assertEquals(1, chunks.get());
+
+        // Demand 1 more chunk.
+        subscriber.subscription.request(1);
+        chunk = await().atMost(5, TimeUnit.SECONDS).until(() -> subscriber.chunk, notNullValue());
+        subscriber.chunk = null;
+        assertEquals("world", UTF_8.decode(chunk.getByteBuffer()).toString());
+
+        // Demand completion.
+        subscriber.subscription.request(1);
+
+        assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
     }
 
     @ParameterizedTest
@@ -499,7 +579,7 @@ public class RxJava2Test extends AbstractTest {
     @MethodSource("protocols")
     public void testResponseContentTimeout(String protocol) throws Exception {
         long timeout = 500;
-        byte[] data = "hello".getBytes(StandardCharsets.UTF_8);
+        byte[] data = "hello".getBytes(UTF_8);
         prepare(protocol, new Handler.Abstract() {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception {
@@ -570,8 +650,8 @@ public class RxJava2Test extends AbstractTest {
                 .blockingGet();
 
         assertEquals(result.response().getStatus(), HttpStatus.OK_200);
-;
-        String expected = StandardCharsets.UTF_8.decode(ByteBuffer.allocate(original.length)
+
+        String expected = UTF_8.decode(ByteBuffer.allocate(original.length)
                 .put(original)
                 .flip()).toString();
         assertEquals(expected, result.content());
@@ -639,7 +719,7 @@ public class RxJava2Test extends AbstractTest {
 
         String text = "hello world";
         ReactiveRequest request = ReactiveRequest.newBuilder(httpClient().newRequest(uri()).method(HttpMethod.POST))
-                .content(ReactiveRequest.Content.fromString(text, "text/plain", StandardCharsets.UTF_8))
+                .content(ReactiveRequest.Content.fromString(text, "text/plain", UTF_8))
                 .build();
         String content = Single.fromPublisher(request.response(ReactiveResponse.Content.asString()))
                 .blockingGet();
@@ -667,9 +747,9 @@ public class RxJava2Test extends AbstractTest {
         String text2 = "world";
         ChunkListSinglePublisher publisher = new ChunkListSinglePublisher();
         // Offer content to trigger the sending of the request and the processing on the server.
-        publisher.offer(StandardCharsets.UTF_8.encode(text1));
+        publisher.offer(UTF_8.encode(text1));
         ReactiveRequest request = ReactiveRequest.newBuilder(httpClient().newRequest(uri()).method(HttpMethod.POST))
-                .content(ReactiveRequest.Content.fromPublisher(publisher, "text/plain", StandardCharsets.UTF_8))
+                .content(ReactiveRequest.Content.fromPublisher(publisher, "text/plain", UTF_8))
                 .build();
         Single<String> flow = Single.fromPublisher(request.response(ReactiveResponse.Content.asString()));
         // Send the request by subscribing as a CompletableFuture.
@@ -678,7 +758,7 @@ public class RxJava2Test extends AbstractTest {
         // Allow the redirect to happen.
         Thread.sleep(1000);
 
-        publisher.offer(StandardCharsets.UTF_8.encode(text2));
+        publisher.offer(UTF_8.encode(text2));
         publisher.complete();
 
         assertEquals(text1 + text2, completable.get(5, TimeUnit.SECONDS));

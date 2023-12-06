@@ -17,7 +17,6 @@ package org.eclipse.jetty.reactive.client.internal;
 
 import java.util.concurrent.CancellationException;
 import java.util.function.BiFunction;
-
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.io.Content;
@@ -73,9 +72,6 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
         if (logger.isDebugEnabled()) {
             logger.debug("received response headers {} on {}", response, this);
         }
-        responseReceived = true;
-        Publisher<T> publisher = contentFn.apply(request.getReactiveResponse(), content);
-        publisher.subscribe(this);
     }
 
     @Override
@@ -83,7 +79,23 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
         if (logger.isDebugEnabled()) {
             logger.debug("received response content source {} {} on {}", response, source, this);
         }
+
+        // Link the source of Chunks with the Publisher of Chunks.
         content.accept(source);
+
+        responseReceived = true;
+
+        // Call the application to obtain a response content transformer.
+        Publisher<T> appPublisher = contentFn.apply(request.getReactiveResponse(), content);
+
+        // Establish the stream chain (content chunks flow top-bottom)
+        // upstream -- produces Chunks (HttpClient)
+        //    -> this.content -- emits Chunks transformed by app's BiFunction
+        //       -> appPublisher -- transform Chunks into Ts and emits Ts
+        //          -> this -- receives Ts and emits Ts as Publisher<T> returned from request.response()
+        //             -> app subscriber
+        //                -> downstream (application)
+        appPublisher.subscribe(this);
     }
 
     @Override
@@ -160,7 +172,6 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
 
         private void accept(Content.Source source) {
             contentSource = source;
-            tryProduce(this);
         }
 
         @Override
