@@ -20,6 +20,7 @@ import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.reactive.client.ReactiveRequest;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
@@ -61,11 +62,11 @@ public class AdapterRequestContent implements Request.Content {
     @Override
     public boolean rewind() {
         boolean rewound = reactiveContent.rewind();
+        if (logger.isDebugEnabled()) {
+            logger.debug("rewinding {} {} on {}", rewound, reactiveContent, bridge);
+        }
         if (rewound) {
-            if (bridge != null) {
-                bridge.cancel();
-                bridge = null;
-            }
+            bridge = null;
         }
         return rewound;
     }
@@ -91,7 +92,7 @@ public class AdapterRequestContent implements Request.Content {
      * <p>A bridge between the {@link Request.Content} read by the {@link HttpClient}
      * implementation and the {@link ReactiveRequest.Content} provided by applications.</p>
      * <p>The first access to the {@link Request.Content} from the {@link HttpClient}
-     * implementation creates the bridge and forwards the access, calling either
+     * implementation creates the bridge and forwards the access to it, calling either
      * {@link #read()} or {@link #demand(Runnable)}.
      * Method {@link #read()} returns the current {@link Content.Chunk}.
      * Method {@link #demand(Runnable)} forwards the demand to the {@link ReactiveRequest.Content},
@@ -99,6 +100,7 @@ public class AdapterRequestContent implements Request.Content {
      * returned by {@link #read()}.</p>
      */
     private class Bridge implements Subscriber<Content.Chunk> {
+        private final SerializedInvoker invoker = new SerializedInvoker();
         private final AutoLock lock = new AutoLock();
         private Subscription subscription;
         private Content.Chunk chunk;
@@ -117,6 +119,10 @@ public class AdapterRequestContent implements Request.Content {
 
         @Override
         public void onNext(Content.Chunk c) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("content {} on {}", c, this);
+            }
+
             Runnable onDemand;
             try (AutoLock ignored = lock.lock()) {
                 chunk = c;
@@ -124,15 +130,15 @@ public class AdapterRequestContent implements Request.Content {
                 demand = null;
             }
 
-            if (logger.isDebugEnabled()) {
-                logger.debug("content {} on {}", c, this);
-            }
-
-            invokeDemand(onDemand);
+            invoker.run(() -> invokeDemand(onDemand));
         }
 
         @Override
         public void onError(Throwable error) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("error on {}", this, error);
+            }
+
             Runnable onDemand;
             try (AutoLock ignored = lock.lock()) {
                 failure = error;
@@ -140,17 +146,15 @@ public class AdapterRequestContent implements Request.Content {
                 demand = null;
             }
 
-            if (logger.isDebugEnabled()) {
-                logger.debug("error on {}", this, error);
-            }
-
-            if (onDemand != null) {
-                invokeDemand(onDemand);
-            }
+            invoker.run(() -> invokeDemand(onDemand));
         }
 
         @Override
         public void onComplete() {
+            if (logger.isDebugEnabled()) {
+                logger.debug("complete on {}", this);
+            }
+
             Runnable onDemand;
             try (AutoLock ignored = lock.lock()) {
                 complete = true;
@@ -158,18 +162,13 @@ public class AdapterRequestContent implements Request.Content {
                 demand = null;
             }
 
-            if (logger.isDebugEnabled()) {
-                logger.debug("complete on {}", this);
-            }
-
-            if (onDemand != null) {
-                invokeDemand(onDemand);
-            }
+            invoker.run(() -> invokeDemand(onDemand));
         }
 
         private Content.Chunk read() {
+            Content.Chunk result;
             try (AutoLock ignored = lock.lock()) {
-                Content.Chunk result = chunk;
+                result = chunk;
                 if (result == null) {
                     if (complete) {
                         result = Content.Chunk.EOF;
@@ -178,27 +177,52 @@ public class AdapterRequestContent implements Request.Content {
                     }
                 }
                 chunk = Content.Chunk.next(result);
-                if (logger.isDebugEnabled()) {
-                    logger.debug("read {} on {}", result, this);
-                }
-                return result;
             }
+            if (logger.isDebugEnabled()) {
+                logger.debug("read {} on {}", result, this);
+            }
+            return result;
         }
 
         private void demand(Runnable onDemand) {
-            try (AutoLock ignored = lock.lock()) {
-                if (demand != null) {
-                    throw new IllegalStateException("demand already exists");
-                }
-                demand = onDemand;
-            }
-
             if (logger.isDebugEnabled()) {
                 logger.debug("demand {} on {}", onDemand, this);
             }
 
-            // Forward the demand.
-            subscription.request(1);
+            Throwable cause;
+            try (AutoLock ignored = lock.lock()) {
+                if (demand != null) {
+                    throw new IllegalStateException("demand already exists");
+                }
+                cause = failure;
+                if (cause == null) {
+                    demand = onDemand;
+                }
+            }
+            if (cause == null) {
+                // Forward the demand.
+                subscription.request(1);
+            } else {
+                invoker.run(() -> invokeDemand(onDemand));
+            }
+        }
+
+        private void fail(Throwable cause) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("failure while processing request content on {}", this, cause);
+            }
+
+            subscription.cancel();
+
+            Runnable onDemand;
+            try (AutoLock ignored = lock.lock()) {
+                if (failure == null) {
+                    failure = cause;
+                }
+                onDemand = demand;
+                demand = null;
+            }
+            invoker.run(() -> invokeDemand(onDemand));
         }
 
         private void invokeDemand(Runnable demand) {
@@ -206,21 +230,21 @@ public class AdapterRequestContent implements Request.Content {
                 if (logger.isDebugEnabled()) {
                     logger.debug("invoking demand callback {} on {}", demand, this);
                 }
-                demand.run();
+                if (demand != null) {
+                    demand.run();
+                }
             } catch (Throwable x) {
                 fail(x);
             }
         }
 
-        private void fail(Throwable failure) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("failure while processing request content on {}", this, failure);
-            }
-            cancel();
-        }
-
-        private void cancel() {
-            subscription.cancel();
+        @Override
+        public String toString() {
+            return "%s$%s@%x".formatted(
+                    getClass().getEnclosingClass().getSimpleName(),
+                    getClass().getSimpleName(),
+                    hashCode()
+            );
         }
     }
 }

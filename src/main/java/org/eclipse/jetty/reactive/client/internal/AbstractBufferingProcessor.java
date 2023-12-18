@@ -17,6 +17,7 @@ package org.eclipse.jetty.reactive.client.internal;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.reactive.client.ReactiveResponse;
 
@@ -67,6 +68,7 @@ public abstract class AbstractBufferingProcessor<T> extends AbstractSingleProces
     @Override
     public void onComplete() {
         T result = process(chunks);
+        chunks.clear();
         downStreamOnNext(result);
         super.onComplete();
     }

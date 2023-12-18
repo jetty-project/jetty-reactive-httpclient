@@ -75,6 +75,12 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
         }
         responseReceived = true;
         Publisher<T> publisher = contentFn.apply(request.getReactiveResponse(), content);
+        // Links the publisher/subscriber chain.
+        // ContentPublisher (reads Chunks)
+        // `- application Processor (receives Chunks, emits T) [optional]
+        //    `- Publisher (emits Ts)
+        //       `- ResponseListenerProcessor (receives Ts, emits Ts)
+        //          `- application Subscriber (receives Ts)
         publisher.subscribe(this);
     }
 
@@ -153,7 +159,8 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
     }
 
     /**
-     * <p>Publishes response {@link Content.Chunk}s to application code.</p>
+     * <p>Publishes response {@link Content.Chunk}s to the application
+     * {@code BiFunction} given to {@link ReactiveRequest#response(BiFunction)}.</p>
      */
     private static class ContentPublisher extends QueuedSinglePublisher<Content.Chunk> implements Runnable {
         private volatile Content.Source contentSource;
