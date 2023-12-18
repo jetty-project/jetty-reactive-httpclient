@@ -17,7 +17,6 @@ package org.eclipse.jetty.reactive.client.internal;
 
 import java.util.concurrent.CancellationException;
 import java.util.function.BiFunction;
-
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.io.Content;
@@ -73,15 +72,6 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
         if (logger.isDebugEnabled()) {
             logger.debug("received response headers {} on {}", response, this);
         }
-        responseReceived = true;
-        Publisher<T> publisher = contentFn.apply(request.getReactiveResponse(), content);
-        // Links the publisher/subscriber chain.
-        // ContentPublisher (reads Chunks)
-        // `- application Processor (receives Chunks, emits T) [optional]
-        //    `- Publisher (emits Ts)
-        //       `- ResponseListenerProcessor (receives Ts, emits Ts)
-        //          `- application Subscriber (receives Ts)
-        publisher.subscribe(this);
     }
 
     @Override
@@ -89,7 +79,24 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
         if (logger.isDebugEnabled()) {
             logger.debug("received response content source {} {} on {}", response, source, this);
         }
+
+        // Link the source of Chunks with the Publisher of Chunks.
         content.accept(source);
+
+        responseReceived = true;
+
+        // Call the application to obtain a response content transformer.
+        Publisher<T> appPublisher = contentFn.apply(request.getReactiveResponse(), content);
+
+        // Links the publisher/subscriber chain.
+        // Content Chunks flow from top (upstream) to bottom (downstream).
+        //
+        // ContentPublisher (reads Chunks)
+        // `- application Processor (receives Chunks, transforms them and emits Ts) [optional]
+        //    `- application Publisher (emits Ts)
+        //       `- ResponseListenerProcessor (receives Ts, emits Ts)
+        //          `- application Subscriber (receives Ts)
+        appPublisher.subscribe(this);
     }
 
     @Override
@@ -167,7 +174,6 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
 
         private void accept(Content.Source source) {
             contentSource = source;
-            tryProduce(this);
         }
 
         @Override
