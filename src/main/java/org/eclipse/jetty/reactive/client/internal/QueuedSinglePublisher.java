@@ -26,7 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
-    private static final Terminal<?> COMPLETE = Subscriber::onComplete;
     private static final Logger logger = LoggerFactory.getLogger(QueuedSinglePublisher.class);
 
     private final Queue<Object> items = new ArrayDeque<>();
@@ -46,14 +45,14 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
         if (logger.isDebugEnabled()) {
             logger.debug("completed {}", this);
         }
-        process(COMPLETE);
+        process(new Complete());
     }
 
     public boolean fail(Throwable failure) {
         if (logger.isDebugEnabled()) {
             logger.debug("failed {}", this, failure);
         }
-        return process(new Failure<>(failure));
+        return process(new Failure(failure));
     }
 
     protected void tryProduce(Runnable producer) {
@@ -171,7 +170,7 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
     }
 
     protected void onNext(Subscriber<? super T> subscriber, T item) {
-        subscriber.onNext(item);
+        emitOnNext(subscriber, item);
     }
 
     private boolean isTerminal(Object item) {
@@ -183,7 +182,14 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
         public void notify(Subscriber<? super T> subscriber);
     }
 
-    private static class Failure<F> implements Terminal<F> {
+    private class Complete implements Terminal<T> {
+        @Override
+        public void notify(Subscriber<? super T> subscriber) {
+            emitOnComplete(subscriber);
+        }
+    }
+
+    private class Failure implements Terminal<T> {
         private final Throwable failure;
 
         private Failure(Throwable failure) {
@@ -191,8 +197,8 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
         }
 
         @Override
-        public void notify(Subscriber<? super F> subscriber) {
-            subscriber.onError(failure);
+        public void notify(Subscriber<? super T> subscriber) {
+            emitOnError(subscriber, failure);
         }
     }
 }

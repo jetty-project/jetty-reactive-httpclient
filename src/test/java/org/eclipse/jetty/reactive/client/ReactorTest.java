@@ -30,6 +30,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.http.client.reactive.JettyClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Hooks;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -76,6 +77,9 @@ public class ReactorTest extends AbstractTest {
                 }
             }
         });
+
+        // Suppresses weird exception thrown by Reactor.
+        Hooks.onErrorDropped(t -> {});
 
         String timeoutResult = "TIMEOUT";
         String responseContent = WebClient.builder()

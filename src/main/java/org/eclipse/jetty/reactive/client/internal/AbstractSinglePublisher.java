@@ -85,19 +85,41 @@ public abstract class AbstractSinglePublisher<T> implements Publisher<T>, Subscr
     protected abstract void onRequest(Subscriber<? super T> subscriber, long n);
 
     protected void onFailure(Subscriber<? super T> subscriber, Throwable failure) {
+        emitOnError(subscriber, failure);
+    }
+
+    protected void emitOnNext(Subscriber<? super T> subscriber, T item) {
+        subscriber.onNext(item);
+    }
+
+    protected void emitOnError(Subscriber<? super T> subscriber, Throwable failure) {
+        // Reset before emitting the event, otherwise there might be a race.
+        reset();
         subscriber.onError(failure);
+    }
+
+    protected void emitOnComplete(Subscriber<? super T> subscriber) {
+        // Reset before emitting the event, otherwise there might be a race.
+        reset();
+        subscriber.onComplete();
     }
 
     @Override
     public void cancel() {
+        Subscriber<? super T> subscriber;
         try (AutoLock ignored = lock()) {
-            if (subscriber != null) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("{} cancelled subscription from {}", this, subscriber);
-                }
-            }
+            subscriber = subscriber();
+            reset();
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug("{} cancelled subscription from {}", this, subscriber);
+        }
+    }
+
+    private void reset() {
+        try (AutoLock ignored = lock()) {
             // Null-out the field to allow re-subscriptions.
-            subscriber = null;
+            this.subscriber = null;
         }
     }
 

@@ -73,7 +73,7 @@ public abstract class AbstractSingleProcessor<I, O> extends AbstractSinglePublis
         try (AutoLock ignored = lock()) {
             demand = MathUtils.cappedAdd(this.demand, n);
             upStream = this.upStream;
-            // If there is not upStream yet, remember the demand.
+            // If there is not upStream yet, store the demand.
             this.demand = upStream == null ? demand : 0;
         }
         upStreamRequest(upStream, demand);
@@ -99,16 +99,16 @@ public abstract class AbstractSingleProcessor<I, O> extends AbstractSinglePublis
                 failure = new IllegalStateException("multiple subscriptions not supported");
             } else {
                 this.upStream = subscription;
-                // The demand stored so far will be forwarded.
+                // The demand stored so far will be forwarded upstream.
                 demand = this.demand;
                 this.demand = 0;
             }
         }
         if (failure != null) {
             subscription.cancel();
-            onError(failure);
+            downStreamOnError(failure);
         } else if (demand > 0) {
-            // Forward any previously stored demand.
+            // Forward upstream any previously stored demand.
             subscription.request(demand);
         }
     }
@@ -122,23 +122,35 @@ public abstract class AbstractSingleProcessor<I, O> extends AbstractSinglePublis
     protected void downStreamOnNext(O item) {
         Subscriber<? super O> downStream = downStream();
         if (downStream != null) {
-            downStream.onNext(item);
+            emitOnNext(downStream, item);
         }
     }
 
     @Override
     public void onError(Throwable throwable) {
+        // This method is called by the upStream
+        // publisher, forward to downStream.
+        downStreamOnError(throwable);
+    }
+
+    private void downStreamOnError(Throwable throwable) {
         Subscriber<? super O> downStream = downStream();
         if (downStream != null) {
-            downStream.onError(throwable);
+            emitOnError(downStream, throwable);
         }
     }
 
     @Override
     public void onComplete() {
+        // This method is called by the upStream
+        // publisher, forward to downStream.
+        downStreamOnComplete();
+    }
+
+    private void downStreamOnComplete() {
         Subscriber<? super O> downStream = downStream();
         if (downStream != null) {
-            downStream.onComplete();
+            emitOnComplete(downStream);
         }
     }
 

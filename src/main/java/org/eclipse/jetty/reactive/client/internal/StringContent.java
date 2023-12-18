@@ -59,12 +59,12 @@ public class StringContent extends AbstractSinglePublisher<Content.Chunk> implem
         switch (state) {
             case INITIAL: {
                 state = State.CONTENT;
-                subscriber.onNext(Content.Chunk.from(ByteBuffer.wrap(bytes), false));
+                emitOnNext(subscriber, Content.Chunk.from(ByteBuffer.wrap(bytes), false));
                 break;
             }
             case CONTENT: {
                 state = State.COMPLETE;
-                subscriber.onComplete();
+                emitOnComplete(subscriber);
                 break;
             }
             default: {

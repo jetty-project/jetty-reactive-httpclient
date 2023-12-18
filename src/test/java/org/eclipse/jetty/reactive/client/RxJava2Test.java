@@ -319,8 +319,8 @@ public class RxJava2Test extends AbstractTest {
         });
 
         ReactiveRequest request = ReactiveRequest.newBuilder(httpClient(), uri()).build();
-        String text = Single.fromPublisher(request.response(ReactiveResponse.Content.asString()))
-                .blockingGet();
+        Publisher<String> publisher = request.response(ReactiveResponse.Content.asString());
+        String text = Single.fromPublisher(publisher).blockingGet();
 
         assertEquals(text, data);
     }
@@ -843,10 +843,10 @@ public class RxJava2Test extends AbstractTest {
                 }
                 if (notify) {
                     if (byteBuffer != null) {
-                        subscriber.onNext(Content.Chunk.from(byteBuffer.slice(), false));
+                        emitOnNext(subscriber, Content.Chunk.from(byteBuffer.slice(), false));
                         continue;
                     } else {
-                        subscriber.onComplete();
+                        emitOnComplete(subscriber);
                     }
                 }
                 break;

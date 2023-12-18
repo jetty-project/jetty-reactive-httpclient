@@ -40,9 +40,9 @@ public abstract class AbstractEventPublisher<T> extends AbstractSinglePublisher<
         }
         if (notify) {
             if (failure == null) {
-                subscriber.onComplete();
+                emitOnComplete(subscriber);
             } else {
-                subscriber.onError(failure);
+                emitOnError(subscriber, failure);
             }
         }
     }
@@ -56,7 +56,7 @@ public abstract class AbstractEventPublisher<T> extends AbstractSinglePublisher<
             }
         }
         if (subscriber != null) {
-            subscriber.onNext(event);
+            emitOnNext(subscriber, event);
         }
     }
 
@@ -67,7 +67,7 @@ public abstract class AbstractEventPublisher<T> extends AbstractSinglePublisher<
             subscriber = subscriber();
         }
         if (subscriber != null) {
-            subscriber.onComplete();
+            emitOnComplete(subscriber);
         }
     }
 
@@ -79,7 +79,7 @@ public abstract class AbstractEventPublisher<T> extends AbstractSinglePublisher<
             subscriber = subscriber();
         }
         if (subscriber != null) {
-            subscriber.onError(failure);
+            emitOnError(subscriber, failure);
         }
     }
 }

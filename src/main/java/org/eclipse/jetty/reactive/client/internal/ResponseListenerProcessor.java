@@ -88,13 +88,14 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
         // Call the application to obtain a response content transformer.
         Publisher<T> appPublisher = contentFn.apply(request.getReactiveResponse(), content);
 
-        // Establish the stream chain (content chunks flow top-bottom)
-        // upstream -- produces Chunks (HttpClient)
-        //    -> this.content -- emits Chunks transformed by app's BiFunction
-        //       -> appPublisher -- transform Chunks into Ts and emits Ts
-        //          -> this -- receives Ts and emits Ts as Publisher<T> returned from request.response()
-        //             -> app subscriber
-        //                -> downstream (application)
+        // Links the publisher/subscriber chain.
+        // Content Chunks flow from top (upstream) to bottom (downstream).
+        //
+        // ContentPublisher (reads Chunks)
+        // `- application Processor (receives Chunks, transforms them and emits Ts) [optional]
+        //    `- application Publisher (emits Ts)
+        //       `- ResponseListenerProcessor (receives Ts, emits Ts)
+        //          `- application Subscriber (receives Ts)
         appPublisher.subscribe(this);
     }
 
@@ -165,7 +166,8 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
     }
 
     /**
-     * <p>Publishes response {@link Content.Chunk}s to application code.</p>
+     * <p>Publishes response {@link Content.Chunk}s to the application
+     * {@code BiFunction} given to {@link ReactiveRequest#response(BiFunction)}.</p>
      */
     private static class ContentPublisher extends QueuedSinglePublisher<Content.Chunk> implements Runnable {
         private volatile Content.Source contentSource;

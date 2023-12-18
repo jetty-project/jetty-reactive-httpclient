@@ -67,6 +67,7 @@ public abstract class AbstractBufferingProcessor<T> extends AbstractSingleProces
     @Override
     public void onComplete() {
         T result = process(chunks);
+        chunks.clear();
         downStreamOnNext(result);
         super.onComplete();
     }
