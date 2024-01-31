@@ -87,8 +87,8 @@
     <jetty-version>9.4.53.v20231009</jetty-version>
     <rxjava-version>3.1.8</rxjava-version>
     <spring-version>5.3.31</spring-version>
-    <slf4j-version>2.0.9</slf4j-version>
-    <log4j2-version>2.22.0</log4j2-version>
+    <slf4j-version>2.0.11</slf4j-version>
+    <log4j2-version>2.22.1</log4j2-version>
     <reactivestreams-version>1.0.4</reactivestreams-version>
   </properties>
 
@@ -190,7 +190,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.11.0</version>
+          <version>3.12.1</version>
           <configuration>
             <source>8</source>
             <target>8</target>
