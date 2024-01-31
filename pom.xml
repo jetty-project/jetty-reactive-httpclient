@@ -84,10 +84,10 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jetty-version>10.0.19</jetty-version>
+    <jetty-version>10.0.20</jetty-version>
     <rxjava-version>3.1.8</rxjava-version>
     <spring-version>5.3.31</spring-version>
-    <slf4j-version>2.0.9</slf4j-version>
+    <slf4j-version>2.0.11</slf4j-version>
     <reactivestreams-version>1.0.4</reactivestreams-version>
   </properties>
 
@@ -189,7 +189,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.11.0</version>
+          <version>3.12.1</version>
           <configuration>
             <source>11</source>
             <target>11</target>
