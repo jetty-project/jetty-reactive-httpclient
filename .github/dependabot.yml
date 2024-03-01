@@ -32,9 +32,6 @@ updates:
     target-branch: "4.0.x"
     schedule:
       interval: "daily"
-    ignore:
-      - dependency-name: "org.springframework:*"
-        versions: [ ">=6.0.0" ]
 
   - package-ecosystem: "github-actions"
     directory: "/"
