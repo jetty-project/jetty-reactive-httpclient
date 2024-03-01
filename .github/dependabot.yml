@@ -26,6 +26,13 @@ updates:
       - dependency-name: "org.springframework:*"
         versions: [ ">=6.0.0" ]
 
+  - package-ecosystem: "maven"
+    directory: "/"
+    open-pull-requests-limit: 50
+    target-branch: "4.0.x"
+    schedule:
+      interval: "daily"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
