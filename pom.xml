@@ -87,7 +87,7 @@
     <jetty-version>11.0.20</jetty-version>
     <rxjava-version>3.1.8</rxjava-version>
     <spring-version>5.3.33</spring-version>
-    <slf4j-version>2.0.12</slf4j-version>
+    <slf4j-version>2.0.13</slf4j-version>
     <reactivestreams-version>1.0.4</reactivestreams-version>
   </properties>
 
@@ -202,7 +202,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-deploy-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.1.2</version>
         </plugin>
         <plugin>
           <artifactId>maven-enforcer-plugin</artifactId>
@@ -210,15 +210,15 @@
         </plugin>
         <plugin>
           <artifactId>maven-gpg-plugin</artifactId>
-          <version>3.2.2</version>
+          <version>3.2.4</version>
         </plugin>
         <plugin>
           <artifactId>maven-install-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.1.2</version>
         </plugin>
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.3.0</version>
+          <version>3.4.1</version>
         </plugin>
         <plugin>
           <artifactId>maven-javadoc-plugin</artifactId>
@@ -252,7 +252,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-source-plugin</artifactId>
-          <version>3.3.0</version>
+          <version>3.3.1</version>
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
@@ -266,7 +266,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.11</version>
+          <version>0.8.12</version>
         </plugin>
         <plugin>
           <groupId>com.mycila</groupId>
