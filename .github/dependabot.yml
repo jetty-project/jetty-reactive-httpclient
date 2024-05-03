@@ -4,9 +4,15 @@ updates:
     directory: "/"
     open-pull-requests-limit: 50
     target-branch: "1.1.x"
+    commit-message:
+      prefix: "[1.1.x] "
     schedule:
       interval: "daily"
     ignore:
+      # Do not upgrade major versions of dependencies
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major" ]
+      # Restrict updates in this branch to jetty in the 1.1.x space
       - dependency-name: "org.eclipse.jetty:*"
         versions: [ ">=10.0.0" ]
       - dependency-name: "org.springframework:*"
@@ -18,9 +24,15 @@ updates:
     directory: "/"
     open-pull-requests-limit: 50
     target-branch: "2.0.x"
+    commit-message:
+      prefix: "[2.0.x] "
     schedule:
       interval: "daily"
     ignore:
+      # Do not upgrade major versions of dependencies
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major" ]
+      # Restrict updates in this branch to jetty in the 2.0.x space
       - dependency-name: "org.eclipse.jetty:*"
         versions: [ ">=11.0.0" ]
       - dependency-name: "org.springframework:*"
@@ -30,8 +42,14 @@ updates:
     directory: "/"
     open-pull-requests-limit: 50
     target-branch: "4.0.x"
+    commit-message:
+      prefix: "[4.0.x] "
     schedule:
       interval: "daily"
+    ignore:
+      # Do not upgrade major versions of dependencies
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major" ]
 
   - package-ecosystem: "github-actions"
     directory: "/"
