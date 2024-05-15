@@ -7,7 +7,7 @@ updates:
     commit-message:
       prefix: "[1.1.x] "
     schedule:
-      interval: "daily"
+      interval: "weekly"
     ignore:
       # Do not upgrade major versions of dependencies
       - dependency-name: "*"
@@ -27,7 +27,7 @@ updates:
     commit-message:
       prefix: "[2.0.x] "
     schedule:
-      interval: "daily"
+      interval: "weekly"
     ignore:
       # Do not upgrade major versions of dependencies
       - dependency-name: "*"
@@ -45,7 +45,7 @@ updates:
     commit-message:
       prefix: "[3.0.x] "
     schedule:
-      interval: "daily"
+      interval: "weekly"
     ignore:
       # Do not upgrade major versions of dependencies
       - dependency-name: "*"
@@ -58,7 +58,7 @@ updates:
     commit-message:
       prefix: "[4.0.x] "
     schedule:
-      interval: "daily"
+      interval: "weekly"
     ignore:
       # Do not upgrade major versions of dependencies
       - dependency-name: "*"
@@ -67,4 +67,4 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
