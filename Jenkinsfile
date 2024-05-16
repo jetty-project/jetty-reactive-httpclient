@@ -59,7 +59,7 @@ def mavenBuild(jdk, cmdline, mvnName, skipRecording) {
     }
     finally
     {
-      if(!skipRecording) {}
+      if(!skipRecording) {
           junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
           // Collect the JaCoCo execution results.
           jacoco inclusionPattern: '**/org/eclipse/jetty/reactive/**/*.class',
