@@ -18,7 +18,7 @@ pipeline {
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk21", "clean install -Dmaven.test.failure.ignore=true -e javadoc:javadoc", "maven3", false)
+              mavenBuild( "jdk21", "clean install -Dmaven.test.failure.ignore=true -e ", "maven3", false)
             }
           }
         }
