@@ -19,6 +19,7 @@ pipeline {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
               mavenBuild( "jdk21", "clean install -Dmaven.test.failure.ignore=true -e ", "maven3", false)
+              mavenBuild( "jdk21", "clean javadoc:javadoc -e ", "maven3", true)
             }
           }
         }
@@ -28,6 +29,7 @@ pipeline {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
               mavenBuild( "jdk17", "clean install -Dmaven.test.failure.ignore=true -e javadoc:javadoc", "maven3", true)
+              mavenBuild( "jdk17", "clean javadoc:javadoc -e ", "maven3", true)
             }
           }
         }
@@ -37,6 +39,7 @@ pipeline {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
               mavenBuild( "jdk11", "clean install -Dmaven.test.failure.ignore=true -e javadoc:javadoc", "maven3", true)
+              mavenBuild( "jdk11", "clean javadoc:javadoc -e ", "maven3", true)
             }
           }
         }
