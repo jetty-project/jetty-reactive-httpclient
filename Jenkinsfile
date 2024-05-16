@@ -1,57 +1,62 @@
 #!groovy
 
-def oss = ["linux"]
-def jdks = ["jdk17", "jdk21"]
+pipeline {
+  agent none
+  // save some io during the build
+  options {
+    skipDefaultCheckout()
+    durabilityHint('PERFORMANCE_OPTIMIZED')
+    buildDiscarder logRotator( numToKeepStr: '60' )
+    disableRestartFromStage()
+  }
 
-def builds = [:]
-for (def os in oss) {
-  for (def jdk in jdks) {
-    builds[os + "_" + jdk] = getFullBuild(os, jdk)
+  stages {
+    stage("Parallel Stage") {
+      parallel {
+        stage("Build / Test / Javadoc - JDK21") {
+          agent { node { label 'linux' } }
+          steps {
+            timeout( time: 180, unit: 'MINUTES' ) {
+              checkout scm
+              mavenBuild( "jdk21", "clean install -Dmaven.test.failure.ignore=true -e javadoc:javadoc", "maven3", false)
+            }
+          }
+        }
+        stage("Build / Test / Javadoc - JDK17") {
+          agent { node { label 'linux' } }
+          steps {
+            timeout( time: 180, unit: 'MINUTES' ) {
+              checkout scm
+              mavenBuild( "jdk17", "clean install -Dmaven.test.failure.ignore=true -e javadoc:javadoc", "maven3", false)
+            }
+          }
+        }
+      }
+    }
   }
 }
 
-parallel builds
-
-def getFullBuild(os, jdk) {
-  return {
-    node(os) {
-      def mvnName = 'maven3'
-      def settingsName = 'oss-settings.xml'
-      def mvnOpts = '-Xms1g -Xmx1g -Djava.awt.headless=true'
-
-      stage("Checkout - ${jdk}") {
-        checkout scm
+def mavenBuild(jdk, cmdline, mvnName, skipRecording) {
+  script {
+    try {
+      withEnv(["JAVA_HOME=${ tool "$jdk" }",
+               "PATH+MAVEN=${ tool "$jdk" }/bin:${tool "$mvnName"}/bin",
+               "MAVEN_OPTS=-Xms3g -Xmx3g -Djava.awt.headless=true -client -XX:+UnlockDiagnosticVMOptions -XX:GCLockerRetryAllocationCount=100"]) {
+      configFileProvider(
+        [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
+          sh "mvn $cmdline -ntp -s $GLOBAL_MVN_SETTINGS -V -B -e -U $cmdline"
+        }
       }
-
-      stage("Build - ${jdk}") {
-        timeout(time: 20, unit: 'MINUTES') {
-          withMaven(maven: mvnName,
-                  jdk: jdk,
-                  publisherStrategy: 'EXPLICIT',
-                  globalMavenSettingsConfig: settingsName,
-                  mavenOpts: mvnOpts) {
-            sh "mvn -V -B clean install -Dmaven.test.failure.ignore=true -e"
-          }
-
-          junit testResults: '**/target/surefire-reports/TEST-*.xml'
+    }
+    finally
+    {
+      if(!skipRecording) {
+          junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
           // Collect the JaCoCo execution results.
           jacoco inclusionPattern: '**/org/eclipse/jetty/reactive/**/*.class',
                   execPattern: '**/target/jacoco.exec',
                   classPattern: '**/target/classes',
                   sourcePattern: '**/src/main/java'
-        }
-      }
-
-      stage("Javadoc - ${jdk}") {
-        timeout(time: 5, unit: 'MINUTES') {
-          withMaven(maven: mvnName,
-                  jdk: jdk,
-                  publisherStrategy: 'EXPLICIT',
-                  globalMavenSettingsConfig: settingsName,
-                  mavenOpts: mvnOpts) {
-            sh "mvn -V -B javadoc:javadoc -e"
-          }
-        }
       }
     }
   }
