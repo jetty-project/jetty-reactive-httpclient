@@ -53,7 +53,7 @@ def mavenBuild(jdk, cmdline, mvnName, skipRecording) {
                "MAVEN_OPTS=-Xms3g -Xmx3g -Djava.awt.headless=true -client -XX:+UnlockDiagnosticVMOptions -XX:GCLockerRetryAllocationCount=100"]) {
       configFileProvider(
         [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
-          sh "mvn $extraArgs -ntp -s $GLOBAL_MVN_SETTINGS -V -B -e -U $cmdline"
+          sh "mvn $cmdline -ntp -s $GLOBAL_MVN_SETTINGS -V -B -e -U $cmdline"
         }
       }
     }
