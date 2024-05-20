@@ -6,7 +6,7 @@ pipeline {
   options {
     skipDefaultCheckout()
     durabilityHint('PERFORMANCE_OPTIMIZED')
-    buildDiscarder logRotator( numToKeepStr: '60' )
+    buildDiscarder logRotator( numToKeepStr: '30' )
     disableRestartFromStage()
   }
 
@@ -46,7 +46,7 @@ pipeline {
   }
 }
 
-def mavenBuild(jdk, cmdline, mvnName, recordJacoco) {
+def mavenBuild(String jdk, String cmdline, String mvnName, boolean recordJacoco) {
   script {
     try {
       withEnv(["JAVA_HOME=${ tool "$jdk" }",
