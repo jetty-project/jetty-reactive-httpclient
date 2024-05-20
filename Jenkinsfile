@@ -18,8 +18,8 @@ pipeline {
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk21", "clean install -Dmaven.test.failure.ignore=true -e ", "maven3", true)
-              mavenBuild( "jdk21", "clean javadoc:javadoc -e ", "maven3", false)
+              mavenBuild( "jdk21", "clean install -Dmaven.test.failure.ignore=true ", "maven3", true)
+              mavenBuild( "jdk21", "clean javadoc:javadoc ", "maven3", false)
             }
           }
         }
@@ -28,7 +28,7 @@ pipeline {
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk17", "clean install -Dmaven.test.failure.ignore=true -e javadoc:javadoc", "maven3", false)
+              mavenBuild( "jdk17", "clean install -Dmaven.test.failure.ignore=true javadoc:javadoc", "maven3", false)
             }
           }
         }
@@ -37,7 +37,7 @@ pipeline {
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk11", "clean install -Dmaven.test.failure.ignore=true -e javadoc:javadoc", "maven3", false)
+              mavenBuild( "jdk11", "clean install -Dmaven.test.failure.ignore=true javadoc:javadoc", "maven3", false)
             }
           }
         }
@@ -60,7 +60,7 @@ def mavenBuild(String jdk, String cmdline, String mvnName, boolean recordJacoco)
     }
     finally
     {
-      junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
+      junit testResults: '**/target/surefire-reports/*.xml', allowEmptyResults: true
       if(recordJacoco) {
           // Collect the JaCoCo execution results.
           jacoco inclusionPattern: '**/org/eclipse/jetty/reactive/**/*.class',
