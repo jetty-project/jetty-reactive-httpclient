@@ -28,7 +28,7 @@ pipeline {
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk17", "clean install -Dmaven.test.failure.ignore=true javadoc:javadoc", "maven3", false)
+              mavenBuild( "jdk17", "clean install -Dmaven.test.failure.ignore=true javadoc:javadoc -Djacoco.skip=true", "maven3", false)
             }
           }
         }
@@ -37,7 +37,7 @@ pipeline {
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk11", "clean install -Dmaven.test.failure.ignore=true javadoc:javadoc", "maven3", false)
+              mavenBuild( "jdk11", "clean install -Dmaven.test.failure.ignore=true javadoc:javadoc -Djacoco.skip=true", "maven3", false)
             }
           }
         }
@@ -62,9 +62,9 @@ def mavenBuild(String jdk, String cmdline, String mvnName, boolean recordJacoco)
     {
       junit testResults: '**/target/surefire-reports/*.xml', allowEmptyResults: true
       if(recordJacoco) {
-          // Collect the JaCoCo execution results.
-          recordCoverage id: "coverage", name: "Coverage", tools: [[parser: 'JACOCO']], sourceCodeRetention: 'MODIFIED',
-                sourceDirectories: [[path: 'src/main/java']]
+        // Collect the JaCoCo execution results.
+        recordCoverage id: "coverage", name: "Coverage", tools: [[parser: 'JACOCO', pattern: '**/jacoco/jacoco.xml']], sourceCodeRetention: 'MODIFIED',
+                        sourceDirectories: [[path: 'src/main/java']]
       }
     }
   }
