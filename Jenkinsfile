@@ -6,7 +6,7 @@ pipeline {
   options {
     skipDefaultCheckout()
     durabilityHint('PERFORMANCE_OPTIMIZED')
-    buildDiscarder logRotator( numToKeepStr: '60' )
+    buildDiscarder logRotator( numToKeepStr: '30' )
     disableRestartFromStage()
   }
 
@@ -18,7 +18,8 @@ pipeline {
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk21", "clean install -Dmaven.test.failure.ignore=true -e javadoc:javadoc", "maven3", false)
+              mavenBuild( "jdk21", "clean install -Dmaven.test.failure.ignore=true ", "maven3", true)
+              mavenBuild( "jdk21", "clean javadoc:javadoc ", "maven3", false)
             }
           }
         }
@@ -27,7 +28,7 @@ pipeline {
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk17", "clean install -Dmaven.test.failure.ignore=true -e javadoc:javadoc", "maven3", true)
+              mavenBuild( "jdk17", "clean install -Dmaven.test.failure.ignore=true javadoc:javadoc -Djacoco.skip=true", "maven3", false)
             }
           }
         }
@@ -36,7 +37,7 @@ pipeline {
   }
 }
 
-def mavenBuild(jdk, cmdline, mvnName, skipJacoco) {
+def mavenBuild(String jdk, String cmdline, String mvnName, boolean recordJacoco) {
   script {
     try {
       withEnv(["JAVA_HOME=${ tool "$jdk" }",
@@ -44,19 +45,17 @@ def mavenBuild(jdk, cmdline, mvnName, skipJacoco) {
                "MAVEN_OPTS=-Xms3g -Xmx3g -Djava.awt.headless=true -client -XX:+UnlockDiagnosticVMOptions -XX:GCLockerRetryAllocationCount=100"]) {
       configFileProvider(
         [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
-          sh "mvn $cmdline -ntp -s $GLOBAL_MVN_SETTINGS -V -B -e -U $cmdline"
+          sh "mvn $cmdline -ntp -s $GLOBAL_MVN_SETTINGS -V -B -e -U"
         }
       }
     }
     finally
     {
-      junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
-      if(!skipJacoco) {
-          // Collect the JaCoCo execution results.
-          jacoco inclusionPattern: '**/org/eclipse/jetty/reactive/**/*.class',
-                  execPattern: '**/target/jacoco.exec',
-                  classPattern: '**/target/classes',
-                  sourcePattern: '**/src/main/java'
+      junit testResults: '**/target/surefire-reports/*.xml', allowEmptyResults: true
+      if(recordJacoco) {
+        // Collect the JaCoCo execution results.
+        recordCoverage id: "coverage", name: "Coverage", tools: [[parser: 'JACOCO', pattern: '**/jacoco/jacoco.xml']], sourceCodeRetention: 'MODIFIED',
+                        sourceDirectories: [[path: 'src/main/java']]
       }
     }
   }
