@@ -6,11 +6,11 @@ A [ReactiveStreams](http://www.reactive-streams.org/) wrapper around [Jetty](htt
 
 ## Versions
 
-| Jetty ReactiveStream HttpClient Versions | Min Java Version | Jetty Version | Status                                                                                                       |
-|------------------------------------------|------------------|---------------|--------------------------------------------------------------------------------------------------------------|
-| `4.0.x`                                  | Java 17          | Jetty 12.0.x  | Stable                                                                                                       |
-| `3.0.x`                                  | Java 11          | Jetty 11.0.x  | Stable                                                                                                       |
-| `2.0.x`                                  | Java 11          | Jetty 10.0.x  | Stable                                                                                                       |
+| Jetty ReactiveStream HttpClient Versions | Min Java Version | Jetty Version | Status                                     |
+|------------------------------------------|------------------|---------------|--------------------------------------------|
+| `4.0.x`                                  | Java 17          | Jetty 12.0.x  | Stable                                     |
+| `3.0.x`                                  | Java 11          | Jetty 11.0.x  | End of Community Support (see [#461](https://github.com/jetty-project/jetty-reactive-httpclient/issues/461)) |
+| `2.0.x`                                  | Java 11          | Jetty 10.0.x  | End of Community Support (see [#461](https://github.com/jetty-project/jetty-reactive-httpclient/issues/461)) |
 | `1.1.x`                                  | Java 8           | Jetty 9.4.x   | End of Community Support (see [#153](https://github.com/jetty-project/jetty-reactive-httpclient/issues/153)) |
 
 ## Usage
@@ -20,7 +20,7 @@ A [ReactiveStreams](http://www.reactive-streams.org/) wrapper around [Jetty](htt
 ```java
 // Create and start Jetty's HttpClient.
 HttpClient httpClient = new HttpClient();
-client.start();
+httpClient.start();
 
 // Create a request using the HttpClient APIs.
 Request request = httpClient.newRequest("http://localhost:8080/path");
@@ -54,12 +54,12 @@ publisher.subscribe(new Subscriber<ReactiveResponse>() {
 });
 ```
 
-### RxJava 2 Usage
+### RxJava 3 Usage
 
 ```java
 // Create and start Jetty's HttpClient.
 HttpClient httpClient = new HttpClient();
-client.start();
+httpClient.start();
 
 // Create a request using the HttpClient APIs.
 Request request = httpClient.newRequest("http://localhost:8080/path");
@@ -110,7 +110,7 @@ Publisher<ReactiveResponse.Result<String>> publisher = request.response((respons
 
 Class `ReactiveResponse.Result` is a Java `record` that holds the response and the response content to allow application code to implement logic that uses both response information such as response status code and response headers, and response content information.
 
-Alternatively, you can write your own processing `BiFunction` using any ReactiveStreams library, such as RxJava 2 (which provides class `Flowable`):
+Alternatively, you can write your own processing `BiFunction` using any ReactiveStreams library, such as RxJava 3 (which provides class `Flowable`):
 
 #### Example: discarding non 200 OK response content
 
