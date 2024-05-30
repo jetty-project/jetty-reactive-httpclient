@@ -13,6 +13,15 @@ pipeline {
   stages {
     stage("Parallel Stage") {
       parallel {
+        stage("Build / Test / Javadoc - JDK17") {
+          agent { node { label 'linux' } }
+          steps {
+            timeout( time: 180, unit: 'MINUTES' ) {
+              checkout scm
+              mavenBuild( "jdk17", "clean install -Dmaven.test.failure.ignore=true javadoc:javadoc -Djacoco.skip=true", "maven3", false)
+            }
+          }
+        }
         stage("Build / Test / Javadoc - JDK21") {
           agent { node { label 'linux' } }
           steps {
@@ -22,12 +31,12 @@ pipeline {
             }
           }
         }
-        stage("Build / Test / Javadoc - JDK17") {
+        stage("Build / Test / Javadoc - JDK22") {
           agent { node { label 'linux' } }
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk17", "clean install -Dmaven.test.failure.ignore=true javadoc:javadoc -Djacoco.skip=true", "maven3", false)
+              mavenBuild( "jdk22", "clean install -Dmaven.test.failure.ignore=true javadoc:javadoc -Djacoco.skip=true", "maven3", false)
             }
           }
         }
