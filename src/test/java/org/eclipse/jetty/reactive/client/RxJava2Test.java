@@ -665,16 +665,21 @@ public class RxJava2Test extends AbstractTest {
             @Override
             public boolean handle(Request request, Response response, Callback callback) {
                 new IteratingCallback() {
+                    private boolean last;
+
                     @Override
                     protected Action process() throws Exception {
+                        if (last) {
+                            return Action.SUCCEEDED;
+                        }
                         // Write slowly 1 byte at a time.
                         if (byteBuffer.position() % 256 == 0) {
                             Thread.sleep(1);
                         }
                         ByteBuffer data = ByteBuffer.wrap(new byte[]{byteBuffer.get()});
-                        boolean last = !byteBuffer.hasRemaining();
+                        last = !byteBuffer.hasRemaining();
                         response.write(last, data, this);
-                        return last ? Action.SUCCEEDED : Action.SCHEDULED;
+                        return Action.SCHEDULED;
                     }
 
                     @Override
