@@ -31,12 +31,12 @@ pipeline {
             }
           }
         }
-        stage("Build / Test / Javadoc - JDK22") {
+        stage("Build / Test / Javadoc - JDK23") {
           agent { node { label 'linux' } }
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk22", "clean install -Dmaven.test.failure.ignore=true javadoc:javadoc -Djacoco.skip=true", "maven3", false)
+              mavenBuild( "jdk23", "clean install -Dmaven.test.failure.ignore=true javadoc:javadoc -Djacoco.skip=true", "maven3", false)
             }
           }
         }
