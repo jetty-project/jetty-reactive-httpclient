@@ -16,13 +16,13 @@
 package org.eclipse.jetty.reactive.client.internal;
 
 import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.reactive.client.ReactiveRequest;
 import org.eclipse.jetty.reactive.client.ReactiveResponse;
+import org.eclipse.jetty.util.thread.Invocable;
 
 public class ResponseEventPublisher extends AbstractEventPublisher<ReactiveResponse.Event> implements Response.Listener {
     private final ReactiveRequest request;
@@ -56,7 +56,7 @@ public class ResponseEventPublisher extends AbstractEventPublisher<ReactiveRespo
 
     @Override
     public void onContentSource(Response response, Content.Source source) {
-        Runnable reader = new Runnable() {
+        Runnable reader = new Invocable.Task.Abstract(Invocable.InvocationType.NON_BLOCKING) {
             @Override
             public void run() {
                 while (true) {

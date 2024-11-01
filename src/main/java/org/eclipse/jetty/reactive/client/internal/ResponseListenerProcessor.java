@@ -23,6 +23,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.reactive.client.ReactiveRequest;
 import org.eclipse.jetty.reactive.client.ReactiveResponse;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
@@ -169,7 +170,7 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
      * <p>Publishes response {@link Content.Chunk}s to the application
      * {@code BiFunction} given to {@link ReactiveRequest#response(BiFunction)}.</p>
      */
-    private static class ContentPublisher extends QueuedSinglePublisher<Content.Chunk> implements Runnable {
+    private static class ContentPublisher extends QueuedSinglePublisher<Content.Chunk> implements Invocable.Task {
         private volatile Content.Source contentSource;
 
         private void accept(Content.Source source) {
@@ -193,6 +194,11 @@ public class ResponseListenerProcessor<T> extends AbstractSingleProcessor<T, T> 
             if (source != null) {
                 read(source);
             }
+        }
+
+        @Override
+        public InvocationType getInvocationType() {
+            return InvocationType.NON_BLOCKING;
         }
 
         private void read(Content.Source source) {
