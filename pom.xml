@@ -85,7 +85,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jetty-version>11.0.24</jetty-version>
-    <rxjava-version>3.1.9</rxjava-version>
+    <rxjava-version>3.1.10</rxjava-version>
     <spring-version>5.3.39</spring-version>
     <slf4j-version>2.0.16</slf4j-version>
     <reactivestreams-version>1.0.4</reactivestreams-version>
@@ -198,7 +198,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.8.0</version>
+          <version>3.8.1</version>
         </plugin>
         <plugin>
           <artifactId>maven-deploy-plugin</artifactId>
@@ -222,7 +222,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.10.1</version>
+          <version>3.11.2</version>
           <configuration>
             <source>8</source>
             <additionalOptions>
@@ -248,7 +248,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-site-plugin</artifactId>
-          <version>3.20.0</version>
+          <version>3.21.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-source-plugin</artifactId>
@@ -256,7 +256,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.5.0</version>
+          <version>3.5.2</version>
         </plugin>
         <plugin>
           <groupId>org.apache.felix</groupId>
@@ -373,7 +373,7 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
-      <version>5.11.1</version>
+      <version>5.11.3</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
