@@ -88,7 +88,7 @@
     <rxjava-version>3.1.10</rxjava-version>
     <spring-version>5.3.39</spring-version>
     <slf4j-version>2.0.16</slf4j-version>
-    <log4j2-version>2.24.2</log4j2-version>
+    <log4j2-version>2.24.3</log4j2-version>
     <reactivestreams-version>1.0.4</reactivestreams-version>
   </properties>
 
