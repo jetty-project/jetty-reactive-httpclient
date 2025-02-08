@@ -21,6 +21,8 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.TimeoutException;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -31,6 +33,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.http.client.reactive.JettyClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Hooks;
+import reactor.core.publisher.Mono;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -94,5 +97,28 @@ public class ReactorTest extends AbstractTest {
                 .block();
 
         assertEquals(timeoutResult, responseContent);
+    }
+
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void test401(String protocol) throws Exception {
+        prepare(protocol, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) {
+                response.setStatus(HttpStatus.UNAUTHORIZED_401);
+                response.getHeaders().add(HttpHeader.WWW_AUTHENTICATE, "Basic realm=\"test\"");
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        var request = httpClient().newRequest(uri());
+        ReactiveRequest reactiveRequest = ReactiveRequest.newBuilder(request).abortOnCancel(true).build();
+        Mono<ReactiveResponse> responseMono = Mono.fromDirect(reactiveRequest.response());
+        ReactiveResponse reactiveResponse = responseMono.block(Duration.ofSeconds(5));
+
+        assertNotNull(reactiveResponse);
+        assertEquals(HttpStatus.UNAUTHORIZED_401, reactiveResponse.getStatus());
     }
 }
