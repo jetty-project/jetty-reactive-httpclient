@@ -43,6 +43,15 @@ updates:
     schedule:
       interval: "daily"
 
+  - package-ecosystem: "maven"
+    directory: "/"
+    open-pull-requests-limit: 50
+    target-branch: "4.1.x"
+    commit-message:
+      prefix: "[4.1.x] "
+    schedule:
+      interval: "daily"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
