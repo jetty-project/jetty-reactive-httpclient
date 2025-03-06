@@ -62,7 +62,7 @@ def mavenBuild(String jdk, String cmdline, String mvnName, boolean recordJacoco)
       junit testResults: '**/target/surefire-reports/*.xml', allowEmptyResults: true
       if(recordJacoco) {
         // Collect the JaCoCo execution results.
-        recordCoverage id: "coverage", name: "Coverage", tools: [[parser: 'JACOCO', pattern: '**/jacoco/jacoco.xml']], sourceCodeRetention: 'MODIFIED',
+        recordCoverage name: "Coverage ${jdk}", id: "coverage-${jdk}", tools: [[parser: 'JACOCO']], sourceCodeRetention: 'MODIFIED',
                         sourceDirectories: [[path: 'src/main/java']]
       }
     }

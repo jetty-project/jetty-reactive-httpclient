@@ -42,6 +42,9 @@ updates:
       prefix: "[4.0.x] "
     schedule:
       interval: "daily"
+    ignore:
+      - dependency-name: "org.eclipse.jetty:*"
+        versions: [ ">=12.1.0" ]
 
   - package-ecosystem: "github-actions"
     directory: "/"

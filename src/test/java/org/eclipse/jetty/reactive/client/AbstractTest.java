@@ -16,7 +16,6 @@
 package org.eclipse.jetty.reactive.client;
 
 import java.util.List;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
@@ -77,21 +76,17 @@ public class AbstractTest {
     }
 
     private ConnectionFactory createServerConnectionFactory(String protocol) {
-        switch (protocol) {
-            case "h2c":
-                return new HTTP2CServerConnectionFactory(httpConfiguration);
-            default:
-                return new HttpConnectionFactory(httpConfiguration);
-        }
+        return switch (protocol) {
+            case "h2c" -> new HTTP2CServerConnectionFactory(httpConfiguration);
+            default -> new HttpConnectionFactory(httpConfiguration);
+        };
     }
 
     private HttpClientTransport createClientTransport(ClientConnector clientConnector, String protocol) {
-        switch (protocol) {
-            case "h2c":
-                return new HttpClientTransportOverHTTP2(new HTTP2Client(clientConnector));
-            default:
-                return new HttpClientTransportOverHTTP(clientConnector);
-        }
+        return switch (protocol) {
+            case "h2c" -> new HttpClientTransportOverHTTP2(new HTTP2Client(clientConnector));
+            default -> new HttpClientTransportOverHTTP(clientConnector);
+        };
     }
 
     @AfterEach
