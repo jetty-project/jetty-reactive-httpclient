@@ -17,6 +17,8 @@ updates:
         versions: [ ">=7.6.0" ]
       - dependency-name: "org.apache.felix:maven-bundle-plugin"
         versions: [ ">=6.0.0" ]
+      - dependency-name: "com.mycila:license-maven-plugin"
+        versions: [ ">=5.0.0" ]
 
   - package-ecosystem: "maven"
     directory: "/"
