@@ -47,6 +47,16 @@
 
   <repositories>
     <repository>
+      <id>jetty.staging</id>
+      <url>https://oss.sonatype.org/content/groups/jetty-with-staging</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+    <repository>
       <id>jetty.snapshots</id>
       <url>https://oss.sonatype.org/content/repositories/jetty-snapshots/</url>
       <releases>
@@ -285,33 +295,6 @@
           </plugin>
         </plugins>
       </build>
-    </profile>
-    <profile>
-      <id>staging</id>
-      <repositories>
-        <repository>
-          <id>jetty-staging</id>
-          <url>https://oss.sonatype.org/content/groups/jetty-with-staging</url>
-          <releases>
-            <enabled>true</enabled>
-          </releases>
-          <snapshots>
-            <enabled>false</enabled>
-          </snapshots>
-        </repository>
-      </repositories>
-      <pluginRepositories>
-        <pluginRepository>
-          <id>jetty-staging</id>
-          <url>https://oss.sonatype.org/content/groups/jetty-with-staging</url>
-          <releases>
-            <enabled>true</enabled>
-          </releases>
-          <snapshots>
-            <enabled>false</enabled>
-          </snapshots>
-        </pluginRepository>
-      </pluginRepositories>
     </profile>
   </profiles>
 
