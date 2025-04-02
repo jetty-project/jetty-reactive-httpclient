@@ -47,6 +47,16 @@
 
   <repositories>
     <repository>
+      <id>jetty.staging</id>
+      <url>https://oss.sonatype.org/content/groups/jetty-with-staging</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+    <repository>
       <id>jetty.snapshots</id>
       <url>https://oss.sonatype.org/content/repositories/jetty-snapshots/</url>
       <releases>
@@ -74,7 +84,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jetty-version>12.1.0.alpha2</jetty-version>
     <rxjava-version>3.1.10</rxjava-version>
-    <spring-version>6.2.4</spring-version>
+    <spring-version>6.2.5</spring-version>
     <slf4j-version>2.0.17</slf4j-version>
     <reactivestreams-version>1.0.4</reactivestreams-version>
   </properties>
@@ -242,7 +252,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.5.2</version>
+          <version>3.5.3</version>
           <configuration>
             <excludedGroups>external</excludedGroups>
           </configuration>
@@ -260,7 +270,7 @@
         <plugin>
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>
-          <version>4.6</version>
+          <version>5.0.0</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -285,33 +295,6 @@
           </plugin>
         </plugins>
       </build>
-    </profile>
-    <profile>
-      <id>staging</id>
-      <repositories>
-        <repository>
-          <id>jetty-staging</id>
-          <url>https://oss.sonatype.org/content/groups/jetty-with-staging</url>
-          <releases>
-            <enabled>true</enabled>
-          </releases>
-          <snapshots>
-            <enabled>false</enabled>
-          </snapshots>
-        </repository>
-      </repositories>
-      <pluginRepositories>
-        <pluginRepository>
-          <id>jetty-staging</id>
-          <url>https://oss.sonatype.org/content/groups/jetty-with-staging</url>
-          <releases>
-            <enabled>true</enabled>
-          </releases>
-          <snapshots>
-            <enabled>false</enabled>
-          </snapshots>
-        </pluginRepository>
-      </pluginRepositories>
     </profile>
   </profiles>
 

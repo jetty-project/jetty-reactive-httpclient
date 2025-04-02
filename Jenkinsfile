@@ -27,16 +27,16 @@ pipeline {
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk21", "clean install -Dmaven.test.failure.ignore=true  javadoc:javadoc", "maven3", true)
+              mavenBuild( "jdk21", "clean install -Dmaven.test.failure.ignore=true javadoc:javadoc", "maven3", true)
             }
           }
         }
-        stage("Build / Test / Javadoc - JDK23") {
+        stage("Build / Test / Javadoc - JDK24") {
           agent { node { label 'linux-light' } }
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk23", "clean install -Dmaven.test.failure.ignore=true javadoc:javadoc -Djacoco.skip=true", "maven3", false)
+              mavenBuild( "jdk24", "clean install -Dmaven.test.failure.ignore=true javadoc:javadoc -Djacoco.skip=true", "maven3", false)
             }
           }
         }
