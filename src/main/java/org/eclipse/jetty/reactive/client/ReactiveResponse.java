@@ -22,6 +22,7 @@ import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.Content.Chunk;
+import org.eclipse.jetty.reactive.client.internal.ByteArrayBufferingProcessor;
 import org.eclipse.jetty.reactive.client.internal.ByteBufferBufferingProcessor;
 import org.eclipse.jetty.reactive.client.internal.DiscardingProcessor;
 import org.eclipse.jetty.reactive.client.internal.ResultProcessor;
@@ -178,6 +179,26 @@ public class ReactiveResponse {
         public static BiFunction<ReactiveResponse, Publisher<Chunk>, Publisher<ByteBuffer>> asByteBuffer(int maxCapacity) {
             return (response, content) -> {
                 ByteBufferBufferingProcessor result = new ByteBufferBufferingProcessor(response, maxCapacity);
+                content.subscribe(result);
+                return result;
+            };
+        }
+
+        /**
+         * @return a response content processing function that converts the content to a {@code byte[]}
+         * up to {@value ByteArrayBufferingProcessor#DEFAULT_MAX_CAPACITY} bytes.
+         */
+        public static BiFunction<ReactiveResponse, Publisher<Chunk>, Publisher<byte[]>> asByteArray() {
+            return asByteArray(ByteArrayBufferingProcessor.DEFAULT_MAX_CAPACITY);
+        }
+
+        /**
+         * @return a response content processing function that converts the content to a {@code byte[]}
+         * up to the specified maximum capacity in bytes.
+         */
+        public static BiFunction<ReactiveResponse, Publisher<Chunk>, Publisher<byte[]>> asByteArray(int maxCapacity) {
+            return (response, content) -> {
+                ByteArrayBufferingProcessor result = new ByteArrayBufferingProcessor(response, maxCapacity);
                 content.subscribe(result);
                 return result;
             };
