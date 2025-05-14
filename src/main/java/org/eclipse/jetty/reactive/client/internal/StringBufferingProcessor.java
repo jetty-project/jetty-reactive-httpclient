@@ -23,21 +23,16 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.reactive.client.ReactiveResponse;
 
 public class StringBufferingProcessor extends AbstractBufferingProcessor<String> {
+    private final ByteArrayBufferingProcessor bytesProcessor;
+
     public StringBufferingProcessor(ReactiveResponse response, int maxCapacity) {
         super(response, maxCapacity);
+        bytesProcessor = new ByteArrayBufferingProcessor(response, maxCapacity);
     }
 
     @Override
     protected String process(List<Content.Chunk> chunks) {
-        int length = chunks.stream().mapToInt(Content.Chunk::remaining).sum();
-        byte[] bytes = new byte[length];
-        int offset = 0;
-        for (Content.Chunk chunk : chunks) {
-            int l = chunk.remaining();
-            chunk.getByteBuffer().get(bytes, offset, l);
-            offset += l;
-            chunk.release();
-        }
+        byte[] bytes = bytesProcessor.process(chunks);
         String encoding = Objects.requireNonNullElse(getResponse().getEncoding(), StandardCharsets.UTF_8.name());
         return new String(bytes, Charset.forName(encoding));
     }

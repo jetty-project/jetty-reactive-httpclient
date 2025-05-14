@@ -15,24 +15,26 @@
  */
 package org.eclipse.jetty.reactive.client.internal;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.reactive.client.ReactiveResponse;
 
-public class ByteBufferBufferingProcessor extends AbstractBufferingProcessor<ByteBuffer> {
-    public ByteBufferBufferingProcessor(ReactiveResponse response, int maxCapacity) {
+public class ByteArrayBufferingProcessor extends AbstractBufferingProcessor<byte[]> {
+    public ByteArrayBufferingProcessor(ReactiveResponse response, int maxCapacity) {
         super(response, maxCapacity);
     }
 
     @Override
-    protected ByteBuffer process(List<Content.Chunk> chunks) {
+    protected byte[] process(List<Content.Chunk> chunks) {
         int length = Math.toIntExact(chunks.stream().mapToLong(Content.Chunk::remaining).sum());
-        ByteBuffer result = ByteBuffer.allocateDirect(length);
+        int offset = 0;
+        byte[] bytes = new byte[length];
         for (Content.Chunk chunk : chunks) {
-            result.put(chunk.getByteBuffer());
+            int size = chunk.remaining();
+            chunk.getByteBuffer().get(bytes, offset, size);
+            offset += size;
             chunk.release();
         }
-        return result.flip();
+        return bytes;
     }
 }
