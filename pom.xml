@@ -34,39 +34,16 @@
 
   <distributionManagement>
     <repository>
-      <id>oss.sonatype.org</id>
-      <name>OSS Maven2 Repository</name>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+      <id>sonatype-cp</id>
+      <name>Central Portal</name>
+      <url>https://jetty.org</url>
     </repository>
     <snapshotRepository>
-      <id>oss.sonatype.org</id>
-      <name>OSS Maven2 Snapshot Repository</name>
-      <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
+      <id>sonatype-cp</id>
+      <name>Central Portal</name>
+      <url>https://central.sonatype.com/repository/maven-snapshots</url>
     </snapshotRepository>
   </distributionManagement>
-
-  <repositories>
-    <repository>
-      <id>jetty.staging</id>
-      <url>https://oss.sonatype.org/content/groups/jetty-with-staging</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>jetty.snapshots</id>
-      <url>https://oss.sonatype.org/content/repositories/jetty-snapshots/</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
 
   <scm>
     <connection>scm:git:git://github.com/jetty-project/jetty-reactive-httpclient.git</connection>
@@ -90,6 +67,14 @@
   </properties>
 
   <build>
+    <extensions>
+      <extension>
+        <groupId>eu.maveniverse.maven.njord</groupId>
+        <artifactId>extension</artifactId>
+        <version>0.5.3</version>
+      </extension>
+    </extensions>
+
     <plugins>
       <plugin>
         <artifactId>maven-enforcer-plugin</artifactId>
