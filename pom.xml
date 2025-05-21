@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-reactive-httpclient</artifactId>
-  <version>4.0.11-SNAPSHOT</version>
+  <version>4.0.10-SNAPSHOT</version>
   <packaging>bundle</packaging>
   <name>Jetty ReactiveStreams HttpClient</name>
 
@@ -64,6 +64,7 @@
     <spring-version>6.2.6</spring-version>
     <slf4j-version>2.0.17</slf4j-version>
     <reactivestreams-version>1.0.4</reactivestreams-version>
+    <njord.autoPublish>true</njord.autoPublish>
   </properties>
 
   <build>
@@ -71,7 +72,7 @@
       <extension>
         <groupId>eu.maveniverse.maven.njord</groupId>
         <artifactId>extension</artifactId>
-        <version>0.5.3</version>
+        <version>0.5.4</version>
       </extension>
     </extensions>
 
