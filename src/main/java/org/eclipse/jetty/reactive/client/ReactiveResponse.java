@@ -263,6 +263,28 @@ public class ReactiveResponse {
                 return resultProcessor;
             };
         }
+
+        /**
+         * @return a response content processing function that converts the content to a {@code byte[]}
+         * up to {@value ByteArrayBufferingProcessor#DEFAULT_MAX_CAPACITY} bytes,
+         * and produces a {@link Result} with the {@code byte[]} content.
+         */
+        public static BiFunction<ReactiveResponse, Publisher<Chunk>, Publisher<Result<byte[]>>> asByteArrayResult() {
+            return asByteArrayResult(ByteArrayBufferingProcessor.DEFAULT_MAX_CAPACITY);
+        }
+
+        /**
+         * @return a response content processing function that converts the content to a {@code byte[]}
+         * up to the specified maximum capacity in bytes,
+         * and produces a {@link Result} with the {@code byte[]} content.
+         */
+        public static BiFunction<ReactiveResponse, Publisher<Chunk>, Publisher<Result<byte[]>>> asByteArrayResult(int maxCapacity) {
+            return (response, content) -> {
+                ResultProcessor<byte[]> resultProcessor = new ResultProcessor<>(response);
+                asByteArray(maxCapacity).apply(response, content).subscribe(resultProcessor);
+                return resultProcessor;
+            };
+        }
     }
 
     /**
