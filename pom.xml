@@ -72,7 +72,7 @@
       <extension>
         <groupId>eu.maveniverse.maven.njord</groupId>
         <artifactId>extension</artifactId>
-        <version>0.5.4</version>
+        <version>0.5.5</version>
       </extension>
     </extensions>
 
