@@ -56,14 +56,14 @@
   </distributionManagement>
 
   <properties>
-    <jetty-version>12.1.0.beta2</jetty-version>
+    <jetty-version>12.1.0.beta3</jetty-version>
     <njord.autoPublish>true</njord.autoPublish>
     <njord.version>0.8.3</njord.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <reactivestreams-version>1.0.4</reactivestreams-version>
     <rxjava-version>3.1.11</rxjava-version>
     <slf4j-version>2.0.17</slf4j-version>
-    <spring-version>6.2.9</spring-version>
+    <spring-version>6.2.10</spring-version>
   </properties>
 
   <dependencies>
@@ -152,7 +152,6 @@
   </dependencies>
 
   <build>
-
     <pluginManagement>
       <plugins>
         <plugin>
