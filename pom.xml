@@ -56,7 +56,7 @@
   </distributionManagement>
 
   <properties>
-    <jetty-version>12.0.25</jetty-version>
+    <jetty-version>12.0.26</jetty-version>
     <njord.autoPublish>true</njord.autoPublish>
     <njord.version>0.8.3</njord.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
