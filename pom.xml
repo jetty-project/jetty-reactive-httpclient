@@ -59,7 +59,7 @@
     <jetty-version>9.4.58.v20250814</jetty-version>
     <log4j2-version>2.25.1</log4j2-version>
     <njord.autoPublish>true</njord.autoPublish>
-    <njord.version>0.8.3</njord.version>
+    <njord.version>0.8.4</njord.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <reactivestreams-version>1.0.4</reactivestreams-version>
     <rxjava-version>3.1.11</rxjava-version>
