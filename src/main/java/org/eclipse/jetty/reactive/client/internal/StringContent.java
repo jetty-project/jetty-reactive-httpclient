@@ -18,7 +18,6 @@ package org.eclipse.jetty.reactive.client.internal;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Objects;
-
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.reactive.client.ReactiveRequest;
 import org.reactivestreams.Subscriber;
@@ -59,7 +58,8 @@ public class StringContent extends AbstractSinglePublisher<Content.Chunk> implem
         switch (state) {
             case INITIAL: {
                 state = State.CONTENT;
-                emitOnNext(subscriber, Content.Chunk.from(ByteBuffer.wrap(bytes), false));
+                // The whole string is sent at once, so this is the last chunk.
+                emitOnNext(subscriber, Content.Chunk.from(ByteBuffer.wrap(bytes), true));
                 break;
             }
             case CONTENT: {
