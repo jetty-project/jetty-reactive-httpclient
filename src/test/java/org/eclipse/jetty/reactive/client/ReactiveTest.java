@@ -15,10 +15,10 @@
  */
 package org.eclipse.jetty.reactive.client;
 
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.reactive.client.internal.QueuedSinglePublisher;
@@ -76,7 +76,58 @@ public class ReactiveTest extends AbstractTest {
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         ReactiveResponse response = responseRef.get();
         assertNotNull(response);
-        assertEquals(response.getStatus(), HttpStatus.OK_200);
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testEcho(String protocol) throws Exception {
+        prepare(protocol, new Handler.Abstract() {
+            @Override
+            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback) {
+                Content.copy(request, response, callback);
+                return true;
+            }
+        });
+
+        for (int i = 0; i < 5; ++i) {
+            String content = "hello world";
+            Publisher<ReactiveResponse.Result<String>> publisher = ReactiveRequest.newBuilder(httpClient(), uri())
+                    .content(ReactiveRequest.Content.fromString(content, "text/plain", StandardCharsets.UTF_8))
+                    .build()
+                    .response(ReactiveResponse.Content.asStringResult());
+
+            CountDownLatch latch = new CountDownLatch(1);
+            AtomicReference<ReactiveResponse.Result<String>> resultRef = new AtomicReference<>();
+            publisher.subscribe(new Subscriber<>() {
+                @Override
+                public void onSubscribe(Subscription subscription) {
+                    subscription.request(1);
+                }
+
+                @Override
+                public void onNext(ReactiveResponse.Result<String> result) {
+                    resultRef.set(result);
+                }
+
+                @Override
+                public void onError(Throwable failure) {
+                }
+
+                @Override
+                public void onComplete() {
+                    latch.countDown();
+                }
+            });
+
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            ReactiveResponse.Result<String> result = resultRef.get();
+            assertNotNull(result);
+            ReactiveResponse response = result.response();
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals(content, result.content());
+        }
     }
 
     @ParameterizedTest

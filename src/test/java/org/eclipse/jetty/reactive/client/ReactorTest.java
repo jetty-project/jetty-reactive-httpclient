@@ -20,7 +20,10 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Content;
@@ -30,6 +33,9 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.reactive.JettyClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Hooks;
@@ -38,6 +44,7 @@ import reactor.core.publisher.Mono;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ReactorTest extends AbstractTest {
     @ParameterizedTest
@@ -120,5 +127,57 @@ public class ReactorTest extends AbstractTest {
 
         assertNotNull(reactiveResponse);
         assertEquals(HttpStatus.UNAUTHORIZED_401, reactiveResponse.getStatus());
+    }
+
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testEcho(String protocol) throws Exception {
+        prepare(protocol, new Handler.Abstract() {
+            @Override
+            public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback) {
+                Content.copy(request, response, callback);
+                return true;
+            }
+        });
+
+        for (int i = 0; i < 5; ++i) {
+            String content = "hello world";
+            WebClient client = WebClient.builder().clientConnector(new JettyClientHttpConnector(httpClient())).build();
+            Mono<String> publisher = client.post()
+                    .uri(new URI(uri()))
+                    .bodyValue(content)
+                    .exchangeToMono(response -> {
+                        HttpStatusCode status = response.statusCode();
+                        if (status.value() != HttpStatus.OK_200)
+                            return Mono.just("status " + status);
+                        return response.bodyToMono(String.class);
+                    });
+
+            CountDownLatch latch = new CountDownLatch(1);
+            AtomicReference<String> resultRef = new AtomicReference<>();
+            publisher.subscribe(new Subscriber<>() {
+                @Override
+                public void onSubscribe(Subscription subscription) {
+                    subscription.request(1);
+                }
+
+                @Override
+                public void onNext(String result) {
+                    resultRef.set(result);
+                }
+
+                @Override
+                public void onError(Throwable failure) {
+                }
+
+                @Override
+                public void onComplete() {
+                    latch.countDown();
+                }
+            });
+
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            assertEquals(content, resultRef.get());
+        }
     }
 }
