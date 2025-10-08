@@ -18,11 +18,11 @@ package org.eclipse.jetty.reactive.client;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.function.BiFunction;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.io.Content.Chunk;
 import org.eclipse.jetty.reactive.client.internal.AdapterRequestContent;
+import org.eclipse.jetty.reactive.client.internal.BytesContent;
 import org.eclipse.jetty.reactive.client.internal.PublisherContent;
 import org.eclipse.jetty.reactive.client.internal.RequestEventPublisher;
 import org.eclipse.jetty.reactive.client.internal.ResponseEventPublisher;
@@ -79,7 +79,7 @@ public class ReactiveRequest {
     }
 
     private ReactiveRequest(Request request, boolean abortOnCancel) {
-        this.request = request.listener(requestEvents)
+        this.request = request.onRequestListener(requestEvents)
                 .onResponseBegin(r -> {
                     this.response = new ReactiveResponse(this, r);
                 })
@@ -311,6 +311,25 @@ public class ReactiveRequest {
             return false;
         }
 
+        /**
+         * <p>Creates a Content from the given {@code byte[]}.</p>
+         *
+         * @param bytes the request content
+         * @param contentType the request content type
+         * @return a Content wrapping the given {@code byte[]}
+         */
+        public static Content fromBytes(byte[] bytes, String contentType) {
+            return new BytesContent(bytes, contentType);
+        }
+
+        /**
+         * <p>Creates a Content from the given String.</p>
+         *
+         * @param string the request content
+         * @param mediaType the request content media type
+         * @param charset the request content charset
+         * @return a Content wrapping the given String
+         */
         public static Content fromString(String string, String mediaType, Charset charset) {
             return new StringContent(string, mediaType, charset);
         }
