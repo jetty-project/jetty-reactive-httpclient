@@ -18,7 +18,6 @@ package org.eclipse.jetty.reactive.client.internal;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Objects;
-
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.reactive.client.ReactiveRequest;
 import org.reactivestreams.Subscriber;
@@ -30,7 +29,6 @@ public class StringContent extends AbstractSinglePublisher<Content.Chunk> implem
     private final String mediaType;
     private final Charset encoding;
     private final byte[] bytes;
-    private State state = State.INITIAL;
 
     public StringContent(String string, String mediaType, Charset encoding) {
         this.mediaType = Objects.requireNonNull(mediaType);
@@ -50,30 +48,13 @@ public class StringContent extends AbstractSinglePublisher<Content.Chunk> implem
 
     @Override
     public boolean rewind() {
-        state = State.INITIAL;
         return true;
     }
 
     @Override
     protected void onRequest(Subscriber<? super Content.Chunk> subscriber, long n) {
-        switch (state) {
-            case INITIAL: {
-                state = State.CONTENT;
-                emitOnNext(subscriber, Content.Chunk.from(ByteBuffer.wrap(bytes), false));
-                break;
-            }
-            case CONTENT: {
-                state = State.COMPLETE;
-                emitOnComplete(subscriber);
-                break;
-            }
-            default: {
-                break;
-            }
-        }
-    }
-
-    private enum State {
-        INITIAL, CONTENT, COMPLETE
+        // The whole string is sent at once, so this is the last chunk.
+        emitOnNext(subscriber, Content.Chunk.from(ByteBuffer.wrap(bytes), true));
+        emitOnComplete(subscriber);
     }
 }
