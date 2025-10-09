@@ -50,7 +50,7 @@ def mavenBuild(String jdk, String cmdline, String mvnName, boolean recordJacoco)
     try {
       withEnv(["JAVA_HOME=${ tool "$jdk" }",
                "PATH+MAVEN=${ tool "$jdk" }/bin:${tool "$mvnName"}/bin",
-               "MAVEN_OPTS=-Xms3g -Xmx3g -Djava.awt.headless=true -client -XX:+UnlockDiagnosticVMOptions -XX:GCLockerRetryAllocationCount=100"]) {
+               "MAVEN_OPTS=-Xms3g -Xmx3g -Djava.awt.headless=true"]) {
       configFileProvider(
         [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
           sh "mvn $cmdline -ntp -s $GLOBAL_MVN_SETTINGS -V -B -e -U"
