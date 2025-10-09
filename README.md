@@ -6,10 +6,10 @@ A [ReactiveStreams](http://www.reactive-streams.org/) wrapper around [Jetty](htt
 
 ## Versions
 
-| Jetty ReactiveStream HttpClient Versions | Min Java Version | Jetty Version | Status                                                                                                       |
-|------------------------------------------|------------------|---------------|--------------------------------------------------------------------------------------------------------------|
-| `4.1.x`                                  | Java 17          | Jetty 12.1.x  | Development                                                                                                  |
-| `4.0.x`                                  | Java 17          | Jetty 12.0.x  | Stable                                                                                                       |
+| Jetty ReactiveStream HttpClient Versions | Min Java Version | Jetty Version | Status                                     |
+|------------------------------------------|------------------|---------------|--------------------------------------------|
+| `4.1.x`                                  | Java 17          | Jetty 12.1.x  | Stable                                     |
+| `4.0.x`                                  | Java 17          | Jetty 12.0.x  | Stable                                     |
 | `3.0.x`                                  | Java 11          | Jetty 11.0.x  | End of Community Support (see [#461](https://github.com/jetty-project/jetty-reactive-httpclient/issues/461)) |
 | `2.0.x`                                  | Java 11          | Jetty 10.0.x  | End of Community Support (see [#461](https://github.com/jetty-project/jetty-reactive-httpclient/issues/461)) |
 | `1.1.x`                                  | Java 8           | Jetty 9.4.x   | End of Community Support (see [#153](https://github.com/jetty-project/jetty-reactive-httpclient/issues/153)) |
@@ -75,6 +75,26 @@ Publisher<ReactiveResponse> publisher = reactiveRequest.response(ReactiveRespons
 int status = Single.fromPublisher(publisher)
         .map(ReactiveResponse::getStatus)
         .blockingGet();
+```
+
+### Project Reactor Usage
+
+```java
+// Create and start Jetty's HttpClient.
+HttpClient httpClient = new HttpClient();
+httpClient.start();
+
+// Build a Reactor WebClient with Jetty's HttpClient.
+WebClient client = WebClient.builder()
+    .clientConnector(new JettyClientHttpConnector(httpClient))
+    .build();
+
+// Issue a GET request.
+String responseContent = client.get()
+    .uri("http://localhost:8080/path")
+    .retrieve()
+    .bodyToMono(String.class)
+    .block();
 ```
 
 ### Response Content Processing
