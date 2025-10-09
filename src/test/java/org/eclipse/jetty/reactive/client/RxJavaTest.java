@@ -69,7 +69,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class RxJava2Test extends AbstractTest {
+public class RxJavaTest extends AbstractTest {
     @Test
     @Tag("external")
     public void testExternalServer() throws Exception {
