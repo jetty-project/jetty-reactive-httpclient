@@ -15,46 +15,13 @@
  */
 package org.eclipse.jetty.reactive.client.internal;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.util.Objects;
-import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.reactive.client.ReactiveRequest;
-import org.reactivestreams.Subscriber;
 
 /**
  * <p>Utility class that provides a String as reactive content.</p>
  */
-public class StringContent extends AbstractSinglePublisher<Content.Chunk> implements ReactiveRequest.Content {
-    private final String mediaType;
-    private final Charset encoding;
-    private final byte[] bytes;
-
+public class StringContent extends BytesContent {
     public StringContent(String string, String mediaType, Charset encoding) {
-        this.mediaType = Objects.requireNonNull(mediaType);
-        this.encoding = Objects.requireNonNull(encoding);
-        this.bytes = string.getBytes(encoding);
-    }
-
-    @Override
-    public long getLength() {
-        return bytes.length;
-    }
-
-    @Override
-    public String getContentType() {
-        return mediaType + ";charset=" + encoding.name();
-    }
-
-    @Override
-    public boolean rewind() {
-        return true;
-    }
-
-    @Override
-    protected void onRequest(Subscriber<? super Content.Chunk> subscriber, long n) {
-        // The whole string is sent at once, so this is the last chunk.
-        emitOnNext(subscriber, Content.Chunk.from(ByteBuffer.wrap(bytes), true));
-        emitOnComplete(subscriber);
+        super(string.getBytes(encoding), mediaType + ";charset=" + encoding.name());
     }
 }

@@ -115,6 +115,7 @@ public class AdapterRequestContent implements Request.Content {
         @Override
         public void onSubscribe(Subscription s) {
             subscription = s;
+            // Do not demand here, the application controls the demand.
         }
 
         @Override
@@ -130,7 +131,9 @@ public class AdapterRequestContent implements Request.Content {
                 demand = null;
             }
 
-            invoker.run(() -> invokeDemand(onDemand));
+            if (onDemand != null) {
+                invoker.run(() -> invokeDemand(onDemand));
+            }
         }
 
         @Override

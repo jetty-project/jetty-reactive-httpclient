@@ -36,8 +36,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.JettyClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 
@@ -63,6 +65,32 @@ public class ReactorTest extends AbstractTest {
         WebClient client = WebClient.builder().clientConnector(new JettyClientHttpConnector(httpClient())).build();
         byte[] responseContent = client.get()
                 .uri(uri())
+                .retrieve()
+                .bodyToMono(byte[].class)
+                .block();
+        assertNotNull(responseContent);
+        assertArrayEquals(data, responseContent);
+    }
+
+    @ParameterizedTest
+    @MethodSource("protocols")
+    public void testRequestWithContentResponseWithContent(String protocol) throws Exception {
+        byte[] data = new byte[1024];
+        new Random().nextBytes(data);
+        prepare(protocol, new Handler.Abstract() {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) {
+                Content.copy(request, response, callback);
+                return true;
+            }
+        });
+
+        ReactiveRequest.Content requestContent = ReactiveRequest.Content.fromBytes(data, "application/octet-stream");
+        WebClient client = WebClient.builder().clientConnector(new JettyClientHttpConnector(httpClient())).build();
+        byte[] responseContent = client.post()
+                .uri(uri())
+                .contentType(MediaType.parseMediaType(requestContent.getContentType()))
+                .body(Flux.from(requestContent).map(Content.Chunk::getByteBuffer), ByteBuffer.class)
                 .retrieve()
                 .bodyToMono(byte[].class)
                 .block();
