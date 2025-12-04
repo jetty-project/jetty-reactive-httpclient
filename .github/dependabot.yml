@@ -53,6 +53,8 @@ updates:
     ignore:
       - dependency-name: "org.eclipse.jetty:*"
         versions: [ ">=12.1.0" ]
+      - dependency-name: "org.springframework:*"
+        versions: [ ">=7.0.0" ]
 
   - package-ecosystem: "maven"
     directory: "/"
