@@ -56,14 +56,14 @@
   </distributionManagement>
 
   <properties>
-    <jetty-version>12.1.4</jetty-version>
+    <jetty-version>12.1.5</jetty-version>
     <njord.autoPublish>true</njord.autoPublish>
-    <njord.version>0.8.6</njord.version>
+    <njord.version>0.8.7</njord.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <reactivestreams-version>1.0.4</reactivestreams-version>
     <rxjava-version>3.1.12</rxjava-version>
     <slf4j-version>2.0.17</slf4j-version>
-    <spring-version>6.2.12</spring-version>
+    <spring-version>6.2.14</spring-version>
   </properties>
 
   <dependencies>
@@ -164,7 +164,7 @@
         <plugin>
           <groupId>com.diffplug.spotless</groupId>
           <artifactId>spotless-maven-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>3.1.0</version>
         </plugin>
         <plugin>
           <groupId>com.mycila</groupId>
@@ -187,7 +187,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>3.7.1</version>
+          <version>3.8.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-clean-plugin</artifactId>
@@ -224,7 +224,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.4.2</version>
+          <version>3.5.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-javadoc-plugin</artifactId>
@@ -244,7 +244,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-resources-plugin</artifactId>
-          <version>3.3.1</version>
+          <version>3.4.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-site-plugin</artifactId>
@@ -252,7 +252,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-source-plugin</artifactId>
-          <version>3.3.1</version>
+          <version>3.4.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
