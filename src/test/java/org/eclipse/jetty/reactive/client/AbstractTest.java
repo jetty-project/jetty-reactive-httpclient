@@ -16,12 +16,14 @@
 package org.eclipse.jetty.reactive.client;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
@@ -31,9 +33,13 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
+
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.Matchers.is;
 
 public class AbstractTest {
     public static void printTestName(TestInfo testInfo) {
@@ -50,6 +56,8 @@ public class AbstractTest {
     private HttpClient httpClient;
     protected Server server;
     private ServerConnector connector;
+    private ArrayByteBufferPool.Tracking serverBufferPool;
+    private ArrayByteBufferPool.Tracking clientBufferPool;
 
     @BeforeEach
     public void before(TestInfo testInfo) {
@@ -59,7 +67,8 @@ public class AbstractTest {
     public void prepare(String protocol, Handler handler) throws Exception {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
-        server = new Server(serverThreads);
+        serverBufferPool = new ArrayByteBufferPool.Tracking();
+        server = new Server(serverThreads, null, serverBufferPool);
         connector = new ServerConnector(server, 1, 1, createServerConnectionFactory(protocol));
         server.addConnector(connector);
         server.setHandler(handler);
@@ -67,11 +76,13 @@ public class AbstractTest {
 
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
+        clientBufferPool = new ArrayByteBufferPool.Tracking();
         ClientConnector clientConnector = new ClientConnector();
         clientConnector.setExecutor(clientThreads);
         clientConnector.setSelectors(1);
         httpClient = new HttpClient(createClientTransport(clientConnector, protocol));
         httpClient.setExecutor(clientThreads);
+        httpClient.setByteBufferPool(clientBufferPool);
         httpClient.start();
     }
 
@@ -91,8 +102,16 @@ public class AbstractTest {
 
     @AfterEach
     public void dispose() {
-        LifeCycle.stop(httpClient);
-        LifeCycle.stop(server);
+        try
+        {
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> MatcherAssert.assertThat("Client leaks: " + clientBufferPool.dumpLeaks(), clientBufferPool.getLeaks().size(), is(0)));
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> MatcherAssert.assertThat("Server leaks: " + serverBufferPool.dumpLeaks(), serverBufferPool.getLeaks().size(), is(0)));
+        }
+        finally
+        {
+            LifeCycle.stop(httpClient);
+            LifeCycle.stop(server);
+        }
     }
 
     protected HttpClient httpClient() {

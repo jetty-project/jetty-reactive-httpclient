@@ -32,17 +32,20 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -51,11 +54,14 @@ public class HTTP2Test {
     private Server server;
     private ServerConnector connector;
     private HttpClient httpClient;
+    private ArrayByteBufferPool.Tracking serverBufferPool;
+    private ArrayByteBufferPool.Tracking clientBufferPool;
 
     private void start(ServerSessionListener listener) throws Exception {
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
-        server = new Server(serverThreads);
+        serverBufferPool = new ArrayByteBufferPool.Tracking();
+        server = new Server(serverThreads, null, serverBufferPool);
         RawHTTP2ServerConnectionFactory h2c = new RawHTTP2ServerConnectionFactory(listener);
         connector = new ServerConnector(server, 1, 1, h2c);
         server.addConnector(connector);
@@ -63,17 +69,27 @@ public class HTTP2Test {
 
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
+        clientBufferPool = new ArrayByteBufferPool.Tracking();
         ClientConnector clientConnector = new ClientConnector();
         clientConnector.setExecutor(clientThreads);
         clientConnector.setSelectors(1);
         httpClient = new HttpClient(new HttpClientTransportOverHTTP2(new HTTP2Client(clientConnector)));
+        httpClient.setByteBufferPool(clientBufferPool);
         httpClient.start();
     }
 
     @AfterEach
     public void dispose() {
-        LifeCycle.stop(httpClient);
-        LifeCycle.stop(server);
+        try
+        {
+            MatcherAssert.assertThat("Client leaks: " + clientBufferPool.dumpLeaks(), clientBufferPool.getLeaks().size(), is(0));
+            MatcherAssert.assertThat("Server leaks: " + serverBufferPool.dumpLeaks(), serverBufferPool.getLeaks().size(), is(0));
+        }
+        finally
+        {
+            LifeCycle.stop(httpClient);
+            LifeCycle.stop(server);
+        }
     }
 
     @Test
