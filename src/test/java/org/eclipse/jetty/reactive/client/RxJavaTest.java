@@ -439,6 +439,7 @@ public class RxJavaTest extends AbstractTest {
         // There should be 1 chunk only.
         await().during(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).until(chunks::get, is(1));
         Content.Chunk chunk = await().atMost(5, TimeUnit.SECONDS).until(() -> subscriber.chunk, notNullValue());
+        chunk.release();
         subscriber.chunk = null;
         assertEquals("hello", UTF_8.decode(chunk.getByteBuffer()).toString());
 
@@ -448,6 +449,7 @@ public class RxJavaTest extends AbstractTest {
         // Demand 1 more chunk.
         subscriber.subscription.request(1);
         chunk = await().atMost(5, TimeUnit.SECONDS).until(() -> subscriber.chunk, notNullValue());
+        chunk.release();
         subscriber.chunk = null;
         assertEquals("world", UTF_8.decode(chunk.getByteBuffer()).toString());
 
