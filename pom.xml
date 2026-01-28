@@ -58,7 +58,7 @@
   <properties>
     <jetty-version>11.0.26</jetty-version>
     <njord.autoPublish>true</njord.autoPublish>
-    <njord.version>0.8.4</njord.version>
+    <njord.version>0.9.3</njord.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <reactivestreams-version>1.0.4</reactivestreams-version>
     <rxjava-version>3.1.12</rxjava-version>
@@ -128,7 +128,7 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
-      <version>5.14.0</version>
+      <version>5.14.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -170,11 +170,11 @@
         </plugin>
         <plugin>
           <artifactId>maven-antrun-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.2.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>3.7.1</version>
+          <version>3.8.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-clean-plugin</artifactId>
@@ -211,7 +211,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.4.2</version>
+          <version>3.5.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-javadoc-plugin</artifactId>
@@ -225,7 +225,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-release-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.3.1</version>
           <configuration>
             <goals>deploy</goals>
             <preparationGoals>clean install</preparationGoals>
@@ -237,7 +237,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-resources-plugin</artifactId>
-          <version>3.3.1</version>
+          <version>3.4.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-site-plugin</artifactId>
@@ -245,7 +245,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-source-plugin</artifactId>
-          <version>3.3.1</version>
+          <version>3.4.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
@@ -257,7 +257,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.13</version>
+          <version>0.8.14</version>
         </plugin>
       </plugins>
     </pluginManagement>
