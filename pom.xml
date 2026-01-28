@@ -57,9 +57,9 @@
 
   <properties>
     <jetty-version>9.4.58.v20250814</jetty-version>
-    <log4j2-version>2.25.2</log4j2-version>
+    <log4j2-version>2.25.3</log4j2-version>
     <njord.autoPublish>true</njord.autoPublish>
-    <njord.version>0.8.6</njord.version>
+    <njord.version>0.9.3</njord.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <reactivestreams-version>1.0.4</reactivestreams-version>
     <rxjava-version>3.1.12</rxjava-version>
@@ -171,7 +171,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>3.7.1</version>
+          <version>3.8.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-clean-plugin</artifactId>
@@ -207,7 +207,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.4.2</version>
+          <version>3.5.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-javadoc-plugin</artifactId>
@@ -218,7 +218,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-release-plugin</artifactId>
-          <version>3.2.0</version>
+          <version>3.3.1</version>
           <configuration>
             <goals>deploy</goals>
             <preparationGoals>clean install</preparationGoals>
@@ -230,7 +230,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-resources-plugin</artifactId>
-          <version>3.3.1</version>
+          <version>3.4.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-site-plugin</artifactId>
@@ -238,7 +238,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-source-plugin</artifactId>
-          <version>3.3.1</version>
+          <version>3.4.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
