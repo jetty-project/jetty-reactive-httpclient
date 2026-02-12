@@ -63,7 +63,7 @@
     <reactivestreams-version>1.0.4</reactivestreams-version>
     <rxjava-version>3.1.12</rxjava-version>
     <slf4j-version>2.0.17</slf4j-version>
-    <spring-version>6.2.15</spring-version>
+    <spring-version>6.2.16</spring-version>
   </properties>
 
   <dependencies>
