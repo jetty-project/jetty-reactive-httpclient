@@ -19,6 +19,7 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.CompletionException;
 
+import org.eclipse.jetty.util.ConstantThrowable;
 import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.reactivestreams.Subscriber;
@@ -27,6 +28,8 @@ import org.slf4j.LoggerFactory;
 
 public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
     private static final Logger logger = LoggerFactory.getLogger(QueuedSinglePublisher.class);
+
+    private static final Throwable DEFAULT_TERMINATED = new ConstantThrowable("terminated");
 
     private final Queue<Object> items = new ArrayDeque<>();
     private long demand;
@@ -103,7 +106,9 @@ public class QueuedSinglePublisher<T> extends AbstractSinglePublisher<T> {
                 throw new IllegalStateException(terminated);
             }
             if (isTerminal(item)) {
-                terminated = new CompletionException("terminated from " + Thread.currentThread(), null);
+                terminated = logger.isDebugEnabled()
+                        ? new CompletionException("terminated from " + Thread.currentThread(), null)
+                        : DEFAULT_TERMINATED;
             }
             items.offer(item);
             subscriber = subscriber();
