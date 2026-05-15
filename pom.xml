@@ -58,7 +58,7 @@
   <properties>
     <jetty-version>12.1.7</jetty-version>
     <njord.autoPublish>true</njord.autoPublish>
-    <njord.version>0.9.4</njord.version>
+    <njord.version>0.9.6</njord.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <reactivestreams-version>1.0.4</reactivestreams-version>
     <rxjava-version>3.1.12</rxjava-version>
